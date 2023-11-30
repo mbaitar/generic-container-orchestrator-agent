@@ -1,8 +1,8 @@
 package resource
 
 import (
-	applicationv1 "dsync.io/gco/agent/gen/proto/application/v1"
-	"dsync.io/gco/agent/internal/hash"
+	applicationv1 "revengy.io/gco/agent/gen/proto/application/v1"
+	"revengy.io/gco/agent/internal/hash"
 )
 
 // Application defines a structure which describes everything the application needs

@@ -1,12 +1,12 @@
 package docker
 
 import (
-	"dsync.io/gco/agent/internal/config"
-	"dsync.io/gco/agent/internal/provider"
-	"dsync.io/gco/agent/internal/state"
-	"dsync.io/gco/agent/pkg/feature"
-	"dsync.io/gco/agent/pkg/resource"
 	docker "github.com/docker/docker/client"
+	"revengy.io/gco/agent/internal/config"
+	"revengy.io/gco/agent/internal/provider"
+	"revengy.io/gco/agent/internal/state"
+	"revengy.io/gco/agent/pkg/feature"
+	"revengy.io/gco/agent/pkg/resource"
 )
 
 // Provider defines a docker provider which can communicate with the local docker socket.
@@ -124,7 +124,7 @@ func (p *Provider) RemoveFeature(feat feature.Feature) error {
 	}
 
 	p.cleanUpBinds(container)
-	
+
 	return nil
 }
 

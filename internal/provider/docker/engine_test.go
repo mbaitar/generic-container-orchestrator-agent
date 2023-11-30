@@ -2,12 +2,12 @@ package docker
 
 import (
 	"context"
-	"dsync.io/gco/agent/pkg/resource"
 	"errors"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/go-connections/nat"
 	"github.com/stretchr/testify/assert"
+	"revengy.io/gco/agent/pkg/resource"
 	"testing"
 )
 

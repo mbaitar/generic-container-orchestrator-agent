@@ -1,9 +1,9 @@
 package state
 
 import (
-	"dsync.io/gco/agent/pkg/feature"
-	"dsync.io/gco/agent/pkg/resource"
 	"github.com/stretchr/testify/assert"
+	"revengy.io/gco/agent/pkg/feature"
+	"revengy.io/gco/agent/pkg/resource"
 	"testing"
 )
 

@@ -1,8 +1,8 @@
 package docker
 
 import (
-	"dsync.io/gco/agent/pkg/resource"
 	"fmt"
+	"revengy.io/gco/agent/pkg/resource"
 )
 
 // labelPrefix is the prefix used for the labels associated with GCO

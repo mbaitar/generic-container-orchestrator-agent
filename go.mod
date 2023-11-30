@@ -1,4 +1,4 @@
-module dsync.io/gco/agent
+module revengy.io/gco/agent
 
 go 1.19
 

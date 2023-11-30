@@ -1,7 +1,7 @@
 package config
 
 import (
-	"dsync.io/gco/agent/internal/flag"
+	"revengy.io/gco/agent/internal/flag"
 )
 
 type Config struct {

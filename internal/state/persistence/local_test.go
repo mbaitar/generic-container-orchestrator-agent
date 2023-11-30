@@ -1,11 +1,11 @@
 package persistence
 
 import (
-	"dsync.io/gco/agent/internal/state"
-	"dsync.io/gco/agent/pkg/resource"
 	"github.com/stretchr/testify/assert"
 	"os"
 	"path"
+	"revengy.io/gco/agent/internal/state"
+	"revengy.io/gco/agent/pkg/resource"
 	"testing"
 	"time"
 )

@@ -1,11 +1,11 @@
 package diff
 
 import (
-	"dsync.io/gco/agent/internal/flag"
-	"dsync.io/gco/agent/internal/log"
-	"dsync.io/gco/agent/internal/state"
-	"dsync.io/gco/agent/pkg/feature"
-	"dsync.io/gco/agent/pkg/resource"
+	"revengy.io/gco/agent/internal/flag"
+	"revengy.io/gco/agent/internal/log"
+	"revengy.io/gco/agent/internal/state"
+	"revengy.io/gco/agent/pkg/feature"
+	"revengy.io/gco/agent/pkg/resource"
 )
 
 // changes defines a structure which holds the comparison results of to states.

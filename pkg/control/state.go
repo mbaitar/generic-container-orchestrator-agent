@@ -1,14 +1,14 @@
 package control
 
 import (
-	"dsync.io/gco/agent/internal/files"
-	"dsync.io/gco/agent/internal/flag"
-	"dsync.io/gco/agent/internal/log"
-	"dsync.io/gco/agent/internal/state"
-	"dsync.io/gco/agent/internal/state/persistence"
-	"dsync.io/gco/agent/pkg/resource"
 	"os"
 	"path"
+	"revengy.io/gco/agent/internal/files"
+	"revengy.io/gco/agent/internal/flag"
+	"revengy.io/gco/agent/internal/log"
+	"revengy.io/gco/agent/internal/state"
+	"revengy.io/gco/agent/internal/state/persistence"
+	"revengy.io/gco/agent/pkg/resource"
 )
 
 // StateController is a controller structure which manages the internal desired state of the application.

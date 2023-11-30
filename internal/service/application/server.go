@@ -2,11 +2,11 @@ package application
 
 import (
 	"context"
-	applicationv1 "dsync.io/gco/agent/gen/proto/application/v1"
-	"dsync.io/gco/agent/pkg/control"
-	"dsync.io/gco/agent/pkg/resource"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	applicationv1 "revengy.io/gco/agent/gen/proto/application/v1"
+	"revengy.io/gco/agent/pkg/control"
+	"revengy.io/gco/agent/pkg/resource"
 )
 
 type Server struct {

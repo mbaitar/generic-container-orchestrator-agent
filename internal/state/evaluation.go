@@ -1,7 +1,7 @@
 package state
 
 import (
-	"dsync.io/gco/agent/pkg/feature"
+	"revengy.io/gco/agent/pkg/feature"
 )
 
 // Evaluate updates the current application specifications based on the enabled features.

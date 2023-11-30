@@ -2,11 +2,6 @@ package service
 
 import (
 	"context"
-	applicationv1 "dsync.io/gco/agent/gen/proto/application/v1"
-	"dsync.io/gco/agent/internal/config"
-	"dsync.io/gco/agent/internal/log"
-	"dsync.io/gco/agent/internal/service/application"
-	"dsync.io/gco/agent/pkg/control"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -16,6 +11,11 @@ import (
 	"net"
 	"net/http"
 	"os"
+	applicationv1 "revengy.io/gco/agent/gen/proto/application/v1"
+	"revengy.io/gco/agent/internal/config"
+	"revengy.io/gco/agent/internal/log"
+	"revengy.io/gco/agent/internal/service/application"
+	"revengy.io/gco/agent/pkg/control"
 
 	"github.com/gorilla/mux"
 )

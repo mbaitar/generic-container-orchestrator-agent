@@ -1,11 +1,11 @@
 package control
 
 import (
-	"dsync.io/gco/agent/internal/concurrency"
-	"dsync.io/gco/agent/internal/log"
-	"dsync.io/gco/agent/internal/provider"
-	"dsync.io/gco/agent/internal/state"
-	"dsync.io/gco/agent/internal/state/diff"
+	"revengy.io/gco/agent/internal/concurrency"
+	"revengy.io/gco/agent/internal/log"
+	"revengy.io/gco/agent/internal/provider"
+	"revengy.io/gco/agent/internal/state"
+	"revengy.io/gco/agent/internal/state/diff"
 )
 
 // StateUpdateHandler defines a function which will be called when a state update has been
