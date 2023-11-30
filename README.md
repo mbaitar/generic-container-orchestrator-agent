@@ -6,6 +6,25 @@ of the external container systems.
 
 ## Usage
 
+If you are using docker desktop, make sure you have allowed the default docker socket to be used option under the advanced tab in the settings.
+
+### Install dependencies
+```bash
+# Install packages
+go get .
+```
+
+### Start app
+```bash
+# Start app, gRPC and http server
+make run
+```
+
+### Using the API
+> [!TIP]  
+> You can use our postman collection with all the api calls made for you.
+> You can find the postman collection [here](https://www.postman.com/galactic-spaceship-310683/workspace/gco/collection/3303581-894b7592-c8d1-47c7-8a14-d46dd88af130?action=share&creator=3303581)
+
 The following commands can be used to perform required actions upon the code base.
 
 ```bash
