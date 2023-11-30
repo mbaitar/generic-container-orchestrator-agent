@@ -1,0 +1,10 @@
+version: v1
+plugins:
+  - plugin: go
+    out: ../
+    opt:
+      - module=dsync.io/gco/agent
+  - plugin: go-grpc
+    out: ../
+    opt:
+      - module=dsync.io/gco/agent

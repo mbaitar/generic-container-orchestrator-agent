@@ -1,0 +1,51 @@
+syntax = "proto3";
+
+package application.v1;
+option go_package = "dsync.io/gco/agent/gen/proto/application/v1;applicationv1";
+
+import "application/v1/resources.proto";
+
+// ApplicationService.CreateApplication
+message CreateApplicationRequest {
+  Application application = 1;
+}
+message CreateApplicationResponse {}
+
+// ApplicationService.UpdateApplication
+message UpdateApplicationRequest {
+  Application application = 1;
+}
+message UpdateApplicationResponse {}
+
+// ApplicationService.ListApplication
+message ListApplicationsRequest {}
+message ListApplicationsResponse {
+  repeated Application applications = 1;
+}
+
+// ApplicationService.GetApplication
+message GetApplicationRequest {
+  string name = 1;
+}
+message GetApplicationResponse {
+  Application application = 1;
+}
+
+// ApplicationService.DeleteApplication
+message DeleteApplicationRequest {
+  string name = 1;
+}
+message DeleteApplicationResponse {}
+
+service ApplicationService {
+  rpc CreateApplication(CreateApplicationRequest)
+      returns (CreateApplicationResponse);
+  rpc UpdateApplication(UpdateApplicationRequest)
+      returns (UpdateApplicationResponse);
+  rpc ListApplications(ListApplicationsRequest)
+      returns (ListApplicationsResponse);
+  rpc GetApplication(GetApplicationRequest)
+      returns (GetApplicationResponse);
+  rpc DeleteApplication(DeleteApplicationRequest)
+      returns (DeleteApplicationResponse);
+}

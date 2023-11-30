@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package application.v1;
+
+option go_package = "dsync.io/gco/agent/gen/proto/application/v1;applicationv1";
+
+message Image {
+  string name = 1;
+  string tag = 2;
+  string pull_policy = 3;
+}
+
+enum Protocol {
+  PROTOCOL_UNSPECIFIED = 0;
+  PROTOCOL_TCP = 1;
+  PROTOCOL_UDP = 2;
+}
+
+message Port {
+  uint32 container_port = 1;
+  uint32 host_port = 2;
+  Protocol protocol = 3;
+}
+
+message Application {
+  string name = 1;
+  Image image = 2;
+  repeated Port ports = 3;
+  uint32 instances = 4;
+}

@@ -1,0 +1,7 @@
+version: '3'
+
+services:
+  proxy:
+    image: testcab/cors-anywhere
+    ports:
+      - '8888:8080'
