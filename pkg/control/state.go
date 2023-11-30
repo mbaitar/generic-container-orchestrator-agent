@@ -1,6 +1,7 @@
 package control
 
 import (
+	"dsync.io/gco/agent/internal/files"
 	"dsync.io/gco/agent/internal/flag"
 	"dsync.io/gco/agent/internal/log"
 	"dsync.io/gco/agent/internal/state"
@@ -23,21 +24,14 @@ type StateController struct {
 func NewStateController(ctrl *Control) *StateController {
 	controller := &StateController{ctrl: ctrl}
 
-	dir, err := os.UserConfigDir()
+	dir, err := files.GetDirectory()
 	if err != nil {
-		log.Errorf("Unable to retriever user configuration directory: %v", err)
-		os.Exit(1)
-	}
-
-	gcoDir := path.Join(dir, "gco")
-	err = os.MkdirAll(gcoDir, 0744)
-	if err != nil {
-		log.Errorf("Unable to create configuration director '%s': %v", gcoDir, err)
+		log.Errorf("Unable to retrieve configuration directory: %v", err)
 		os.Exit(1)
 	}
 
 	// create local persistence controller
-	persisted := persistence.NewLocalController(path.Join(gcoDir, "gco.state"))
+	persisted := persistence.NewLocalController(path.Join(dir, "gco.state"))
 
 	// get initial state from persisted state
 	initial, err := persisted.Read()
