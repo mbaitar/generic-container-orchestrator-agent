@@ -32,25 +32,27 @@ func (r *Reconciler) WithInitialActualState(actual *state.Spec) *Reconciler {
 	return r
 }
 
-func (r *Reconciler) Apply(desired *state.Spec) {
+func (r *Reconciler) Apply(desired *state.Spec) []error {
 	r.desired = desired
-	r.update(true)
+	return r.update(true)
 }
 
-func (r *Reconciler) Observe(actual *state.Spec) {
+func (r *Reconciler) Observe(actual *state.Spec) []error {
 	r.actual = actual
-	r.update(false)
+	return r.update(false)
 }
 
-func (r *Reconciler) update(triggerFetch bool) {
+func (r *Reconciler) update(triggerFetch bool) []error {
 	modified := false
 	result := compare(r.desired, r.actual)
+	errors := make([]error, 0)
 
 	// adding features (before applications), supporting infrastructure -> some applications might rely on it
 	for _, feat := range result.features.added {
 		err := r.provider.CreateFeature(feat)
 		if err != nil {
 			log.Errorf("Error while creating feature=%s: %v", feat.Name(), err)
+			errors = append(errors, err)
 		} else {
 			log.Debugf("Created feature=%s with hash=%s", feat.Name(), feat.ConfigHash())
 			modified = true
@@ -62,6 +64,7 @@ func (r *Reconciler) update(triggerFetch bool) {
 		err := r.provider.UpdateFeature(feat)
 		if err != nil {
 			log.Errorf("Error while creating feature=%s: %v", feat.Name(), err)
+			errors = append(errors, err)
 		} else {
 			log.Debugf("Updated feature=%s to hash=%s", feat.Name(), feat.ConfigHash())
 			modified = true
@@ -73,6 +76,7 @@ func (r *Reconciler) update(triggerFetch bool) {
 		err := r.provider.RemoveApplication(&app)
 		if err != nil {
 			log.Errorf("Error while removing application=%s: %v", app.Name, err)
+			errors = append(errors, err)
 		} else {
 			log.Debugf("Removed application=%s from state", app.Name)
 			modified = true
@@ -84,6 +88,7 @@ func (r *Reconciler) update(triggerFetch bool) {
 		err := r.provider.UpdateApplication(&app)
 		if err != nil {
 			log.Errorf("Error while updating application=%s: %v", app.Name, err)
+			errors = append(errors, err)
 		} else {
 			log.Debugf("Updated application=%s to hash=%s", app.Name, app.CalculateHash())
 			modified = true
@@ -95,6 +100,7 @@ func (r *Reconciler) update(triggerFetch bool) {
 		err := r.provider.CreateApplication(&app)
 		if err != nil {
 			log.Errorf("Error while creating application=%s: %v", app.Name, err)
+			errors = append(errors, err)
 		} else {
 			log.Debugf("Created application=%s with hash=%s", app.Name, app.CalculateHash())
 			modified = true
@@ -106,6 +112,7 @@ func (r *Reconciler) update(triggerFetch bool) {
 		err := r.provider.RemoveFeature(feat)
 		if err != nil {
 			log.Errorf("Error while removing feature=%s: %v", feat.Name(), err)
+			errors = append(errors, err)
 		} else {
 			log.Debugf("Removed feature=%s from state", feat.Name())
 			modified = true
@@ -117,8 +124,11 @@ func (r *Reconciler) update(triggerFetch bool) {
 		actual, err := r.provider.ActualState()
 		if err != nil {
 			log.Errorf("Unable to get actual state from external system: %v", err)
+			errors = append(errors, err)
 		} else {
 			r.actual = actual
 		}
 	}
+
+	return errors
 }
