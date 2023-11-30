@@ -220,4 +220,4 @@ $RECYCLE.BIN/
 # ignore all .idea/ files
 .idea/*
 
-.bin/*
+bin/*
