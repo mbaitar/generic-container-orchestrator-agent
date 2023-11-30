@@ -24,6 +24,7 @@ make run
 > [!TIP]  
 > You can use our postman collection with all the api calls made for you.
 > You can find the postman collection [here](https://www.postman.com/galactic-spaceship-310683/workspace/gco/collection/3303581-894b7592-c8d1-47c7-8a14-d46dd88af130?action=share&creator=3303581)
+> While executing the api requests keep a close look on your docker container you have created
 
 The following commands can be used to perform required actions upon the code base.
 
