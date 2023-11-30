@@ -1,4 +1,4 @@
-# agent
+# Agent
 
 Agent is part of the Generic Container Orchestration project.
 It is the most crucial part of the project as it is responsible for managing the state
