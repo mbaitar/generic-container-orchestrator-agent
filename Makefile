@@ -23,4 +23,11 @@ test:
 generate:
 	cd proto && buf generate
 
+build-local:
+	@go build -o bin/app
+
+run: build-local
+	@./bin/app
+
+
 .PHONY: test build generate
