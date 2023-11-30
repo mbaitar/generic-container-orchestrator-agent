@@ -19,7 +19,7 @@ type Config struct {
 func DefaultConfig() *Config {
 	return &Config{
 		General: General{
-			ResetProviderOnStartup: true,
+			ResetProviderOnStartup: false,
 		},
 		Grpc: Grpc{
 			Enabled:          true,
