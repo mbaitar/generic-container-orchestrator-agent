@@ -1,7 +1,7 @@
 package persistence
 
 import (
-	"dsync.io/gco/agent/internal/state"
+	"revengy.io/gco/agent/internal/state"
 )
 
 // ChangeChannel defines a channel used for read only messages of a changed State.

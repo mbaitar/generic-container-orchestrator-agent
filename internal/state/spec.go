@@ -1,10 +1,10 @@
 package state
 
 import (
-	"dsync.io/gco/agent/pkg/feature"
-	"dsync.io/gco/agent/pkg/resource"
 	"errors"
 	"fmt"
+	"revengy.io/gco/agent/pkg/feature"
+	"revengy.io/gco/agent/pkg/resource"
 )
 
 // Spec describes the application specification in an 'as is' or 'should be' state.

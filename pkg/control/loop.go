@@ -2,12 +2,12 @@ package control
 
 import (
 	"context"
-	"dsync.io/gco/agent/internal/log"
-	"dsync.io/gco/agent/internal/provider"
-	"dsync.io/gco/agent/internal/state"
-	"dsync.io/gco/agent/internal/state/diff"
 	"github.com/google/uuid"
 	"os"
+	"revengy.io/gco/agent/internal/log"
+	"revengy.io/gco/agent/internal/provider"
+	"revengy.io/gco/agent/internal/state"
+	"revengy.io/gco/agent/internal/state/diff"
 
 	"golang.org/x/sync/semaphore"
 )

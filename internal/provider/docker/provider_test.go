@@ -1,12 +1,12 @@
 package docker
 
 import (
-	"dsync.io/gco/agent/internal/files"
-	"dsync.io/gco/agent/pkg/feature"
-	"dsync.io/gco/agent/pkg/resource"
 	"errors"
 	"github.com/docker/docker/api/types"
 	"github.com/stretchr/testify/assert"
+	"revengy.io/gco/agent/internal/files"
+	"revengy.io/gco/agent/pkg/feature"
+	"revengy.io/gco/agent/pkg/resource"
 	"strings"
 	"testing"
 )

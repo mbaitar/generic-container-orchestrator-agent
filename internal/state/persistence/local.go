@@ -1,9 +1,9 @@
 package persistence
 
 import (
-	"dsync.io/gco/agent/internal/log"
-	"dsync.io/gco/agent/internal/state"
 	"os"
+	"revengy.io/gco/agent/internal/log"
+	"revengy.io/gco/agent/internal/state"
 )
 
 type LocalController struct {

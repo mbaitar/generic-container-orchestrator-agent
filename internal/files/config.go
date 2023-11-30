@@ -1,11 +1,11 @@
 package files
 
 import (
-	"dsync.io/gco/agent/internal/hash"
-	"dsync.io/gco/agent/internal/log"
 	"fmt"
 	"os"
 	"path"
+	"revengy.io/gco/agent/internal/hash"
+	"revengy.io/gco/agent/internal/log"
 )
 
 // directory specifies the directory to use when writing configuration files.

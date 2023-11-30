@@ -1,6 +1,6 @@
 package resource
 
-import applicationv1 "dsync.io/gco/agent/gen/proto/application/v1"
+import applicationv1 "revengy.io/gco/agent/gen/proto/application/v1"
 
 type Protocol string
 

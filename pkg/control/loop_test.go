@@ -1,11 +1,11 @@
 package control
 
 import (
-	"dsync.io/gco/agent/internal/state"
-	"dsync.io/gco/agent/pkg/feature"
-	"dsync.io/gco/agent/pkg/resource"
 	"github.com/stretchr/testify/assert"
 	"log"
+	"revengy.io/gco/agent/internal/state"
+	"revengy.io/gco/agent/pkg/feature"
+	"revengy.io/gco/agent/pkg/resource"
 	"sync"
 	"testing"
 )

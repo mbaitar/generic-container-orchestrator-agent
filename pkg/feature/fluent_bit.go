@@ -1,9 +1,9 @@
 package feature
 
 import (
-	"dsync.io/gco/agent/internal/hash"
-	"dsync.io/gco/agent/pkg/resource"
 	"fmt"
+	"revengy.io/gco/agent/internal/hash"
+	"revengy.io/gco/agent/pkg/resource"
 	"sort"
 	"strings"
 )

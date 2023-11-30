@@ -1,12 +1,12 @@
 package persistence
 
 import (
-	"dsync.io/gco/agent/internal/log"
-	"dsync.io/gco/agent/internal/state"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"io"
+	"revengy.io/gco/agent/internal/log"
+	"revengy.io/gco/agent/internal/state"
 )
 
 // WriteJson writes the given state to the io.Writer.

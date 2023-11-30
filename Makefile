@@ -1,5 +1,5 @@
 BINARY := out/agent
-PACKAGE_NAME := dsync.io/gco/agent
+PACKAGE_NAME := revengy.io/gco/agent
 
 VERSION := v0.1.0
 BUILD := $(shell date +%Y%m%d)

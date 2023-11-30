@@ -1,8 +1,8 @@
 package log
 
 import (
-	"dsync.io/gco/agent/internal/flag"
 	"fmt"
+	"revengy.io/gco/agent/internal/flag"
 )
 
 // Info prints out an informative message to StdOut.

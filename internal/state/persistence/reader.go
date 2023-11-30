@@ -1,10 +1,10 @@
 package persistence
 
 import (
-	"dsync.io/gco/agent/internal/log"
-	"dsync.io/gco/agent/internal/state"
 	"encoding/json"
 	"io"
+	"revengy.io/gco/agent/internal/log"
+	"revengy.io/gco/agent/internal/state"
 )
 
 // ReadJson reads the state from the io.ReadCloser.

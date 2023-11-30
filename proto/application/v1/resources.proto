@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package application.v1;
 
-option go_package = "dsync.io/gco/agent/gen/proto/application/v1;applicationv1";
+option go_package = "revengy.io/gco/agent/gen/proto/application/v1;applicationv1";
 
 message Image {
   string name = 1;

@@ -1,9 +1,9 @@
 package diff
 
 import (
-	"dsync.io/gco/agent/internal/log"
-	"dsync.io/gco/agent/internal/provider"
-	"dsync.io/gco/agent/internal/state"
+	"revengy.io/gco/agent/internal/log"
+	"revengy.io/gco/agent/internal/provider"
+	"revengy.io/gco/agent/internal/state"
 )
 
 // Reconciler defines a structure that is responsible for the reconciliation process

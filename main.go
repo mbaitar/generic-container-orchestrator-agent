@@ -1,13 +1,13 @@
 package main
 
 import (
-	"dsync.io/gco/agent/internal/config"
-	"dsync.io/gco/agent/internal/log"
-	"dsync.io/gco/agent/internal/provider"
-	"dsync.io/gco/agent/internal/provider/docker"
-	"dsync.io/gco/agent/internal/service"
-	"dsync.io/gco/agent/pkg/control"
 	"os"
+	"revengy.io/gco/agent/internal/config"
+	"revengy.io/gco/agent/internal/log"
+	"revengy.io/gco/agent/internal/provider"
+	"revengy.io/gco/agent/internal/provider/docker"
+	"revengy.io/gco/agent/internal/service"
+	"revengy.io/gco/agent/pkg/control"
 )
 
 func createProvider(conf *config.Config) provider.Provider {
