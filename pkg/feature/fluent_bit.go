@@ -2,10 +2,11 @@ package feature
 
 import (
 	"fmt"
-	"revengy.io/gco/agent/internal/hash"
-	"revengy.io/gco/agent/pkg/resource"
 	"sort"
 	"strings"
+
+	"github.com/mabaitar/gco/agent/internal/hash"
+	"github.com/mabaitar/gco/agent/pkg/resource"
 )
 
 type FluentBit struct {

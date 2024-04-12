@@ -3,11 +3,12 @@ package control
 import (
 	"os"
 	"path"
-	"revengy.io/gco/agent/internal/flag"
-	"revengy.io/gco/agent/internal/log"
-	"revengy.io/gco/agent/internal/state"
-	"revengy.io/gco/agent/internal/state/persistence"
-	"revengy.io/gco/agent/pkg/resource"
+
+	"github.com/mabaitar/gco/agent/internal/flag"
+	"github.com/mabaitar/gco/agent/internal/log"
+	"github.com/mabaitar/gco/agent/internal/state"
+	"github.com/mabaitar/gco/agent/internal/state/persistence"
+	"github.com/mabaitar/gco/agent/pkg/resource"
 )
 
 // StateController is a controller structure which manages the internal desired state of the application.

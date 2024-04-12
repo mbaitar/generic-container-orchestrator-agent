@@ -2,9 +2,10 @@ package docker
 
 import (
 	"fmt"
-	"revengy.io/gco/agent/internal/files"
-	"revengy.io/gco/agent/pkg/feature"
-	"revengy.io/gco/agent/pkg/resource"
+
+	"github.com/mabaitar/gco/agent/internal/files"
+	"github.com/mabaitar/gco/agent/pkg/feature"
+	"github.com/mabaitar/gco/agent/pkg/resource"
 )
 
 // createFluentBitContainer creates an internal container definition based on the feature.FluentBit configuration.

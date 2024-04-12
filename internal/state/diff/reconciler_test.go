@@ -2,11 +2,12 @@ package diff
 
 import (
 	"errors"
-	"github.com/stretchr/testify/assert"
-	"revengy.io/gco/agent/internal/state"
-	"revengy.io/gco/agent/pkg/feature"
-	"revengy.io/gco/agent/pkg/resource"
 	"testing"
+
+	"github.com/mabaitar/gco/agent/internal/state"
+	"github.com/mabaitar/gco/agent/pkg/feature"
+	"github.com/mabaitar/gco/agent/pkg/resource"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestInitReconciler(t *testing.T) {

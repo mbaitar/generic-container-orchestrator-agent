@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"os"
 	"path"
-	"revengy.io/gco/agent/internal/hash"
-	"revengy.io/gco/agent/internal/log"
+
+	"github.com/mabaitar/gco/agent/internal/hash"
+	"github.com/mabaitar/gco/agent/internal/log"
 )
 
 // directory specifies the directory to use when writing configuration files.

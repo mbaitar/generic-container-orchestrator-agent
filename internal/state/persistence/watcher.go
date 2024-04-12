@@ -1,10 +1,11 @@
 package persistence
 
 import (
-	"github.com/fsnotify/fsnotify"
 	"os"
-	"revengy.io/gco/agent/internal/log"
-	"revengy.io/gco/agent/internal/state"
+
+	"github.com/fsnotify/fsnotify"
+	"github.com/mabaitar/gco/agent/internal/log"
+	"github.com/mabaitar/gco/agent/internal/state"
 )
 
 type ChangeHandler func(s *state.Spec)

@@ -1,11 +1,11 @@
 package diff
 
 import (
-	"revengy.io/gco/agent/internal/flag"
-	"revengy.io/gco/agent/internal/log"
-	"revengy.io/gco/agent/internal/state"
-	"revengy.io/gco/agent/pkg/feature"
-	"revengy.io/gco/agent/pkg/resource"
+	"github.com/mabaitar/gco/agent/internal/flag"
+	"github.com/mabaitar/gco/agent/internal/log"
+	"github.com/mabaitar/gco/agent/internal/state"
+	"github.com/mabaitar/gco/agent/pkg/feature"
+	"github.com/mabaitar/gco/agent/pkg/resource"
 )
 
 // changes defines a structure which holds the comparison results of to states.

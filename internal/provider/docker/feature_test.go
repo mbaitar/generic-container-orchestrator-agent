@@ -1,11 +1,12 @@
 package docker
 
 import (
-	"github.com/stretchr/testify/assert"
-	"revengy.io/gco/agent/pkg/feature"
-	"revengy.io/gco/agent/pkg/resource"
 	"strings"
 	"testing"
+
+	"github.com/mabaitar/gco/agent/pkg/feature"
+	"github.com/mabaitar/gco/agent/pkg/resource"
+	"github.com/stretchr/testify/assert"
 )
 
 type UnsupportedFeature struct {

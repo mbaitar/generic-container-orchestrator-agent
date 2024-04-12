@@ -2,13 +2,14 @@ package persistence
 
 import (
 	"errors"
-	"github.com/fsnotify/fsnotify"
-	"github.com/stretchr/testify/assert"
 	"os"
 	"path"
-	"revengy.io/gco/agent/internal/state"
 	"testing"
 	"time"
+
+	"github.com/fsnotify/fsnotify"
+	"github.com/mabaitar/gco/agent/internal/state"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestWatcher_Init(t *testing.T) {

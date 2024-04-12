@@ -3,11 +3,12 @@ package persistence
 import (
 	"bytes"
 	"errors"
-	"github.com/stretchr/testify/assert"
 	"io"
-	"revengy.io/gco/agent/pkg/resource"
 	"testing"
 	"testing/iotest"
+
+	"github.com/mabaitar/gco/agent/pkg/resource"
+	"github.com/stretchr/testify/assert"
 )
 
 const testJson = `

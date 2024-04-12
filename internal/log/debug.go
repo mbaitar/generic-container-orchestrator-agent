@@ -2,7 +2,8 @@ package log
 
 import (
 	"fmt"
-	"revengy.io/gco/agent/internal/flag"
+
+	"github.com/mabaitar/gco/agent/internal/flag"
 )
 
 // Debug prints out a debug message to StdOut.

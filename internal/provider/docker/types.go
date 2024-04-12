@@ -2,12 +2,13 @@ package docker
 
 import (
 	"fmt"
+	"strconv"
+	"strings"
+
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/go-connections/nat"
-	"revengy.io/gco/agent/pkg/resource"
-	"strconv"
-	"strings"
+	"github.com/mabaitar/gco/agent/pkg/resource"
 )
 
 // containerPort describes a port exposed by a container.

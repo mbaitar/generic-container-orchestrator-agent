@@ -1,10 +1,11 @@
 package state
 
 import (
-	"github.com/stretchr/testify/assert"
-	"revengy.io/gco/agent/pkg/feature"
-	"revengy.io/gco/agent/pkg/resource"
 	"testing"
+
+	"github.com/mabaitar/gco/agent/pkg/feature"
+	"github.com/mabaitar/gco/agent/pkg/resource"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestSpec_Evaluate_shouldAppendFluentBitConfig(t *testing.T) {

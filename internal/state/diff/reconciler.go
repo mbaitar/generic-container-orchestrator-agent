@@ -1,9 +1,9 @@
 package diff
 
 import (
-	"revengy.io/gco/agent/internal/log"
-	"revengy.io/gco/agent/internal/provider"
-	"revengy.io/gco/agent/internal/state"
+	"github.com/mabaitar/gco/agent/internal/log"
+	"github.com/mabaitar/gco/agent/internal/provider"
+	"github.com/mabaitar/gco/agent/internal/state"
 )
 
 // Reconciler defines a structure that is responsible for the reconciliation process
