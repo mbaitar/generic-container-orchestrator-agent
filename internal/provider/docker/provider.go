@@ -2,11 +2,11 @@ package docker
 
 import (
 	docker "github.com/docker/docker/client"
-	"revengy.io/gco/agent/internal/config"
-	"revengy.io/gco/agent/internal/provider"
-	"revengy.io/gco/agent/internal/state"
-	"revengy.io/gco/agent/pkg/feature"
-	"revengy.io/gco/agent/pkg/resource"
+	"github.com/mabaitar/gco/agent/internal/config"
+	"github.com/mabaitar/gco/agent/internal/provider"
+	"github.com/mabaitar/gco/agent/internal/state"
+	"github.com/mabaitar/gco/agent/pkg/feature"
+	"github.com/mabaitar/gco/agent/pkg/resource"
 )
 
 // Provider defines a docker provider which can communicate with the local docker socket.

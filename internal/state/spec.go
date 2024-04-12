@@ -3,8 +3,9 @@ package state
 import (
 	"errors"
 	"fmt"
-	"revengy.io/gco/agent/pkg/feature"
-	"revengy.io/gco/agent/pkg/resource"
+
+	"github.com/mabaitar/gco/agent/pkg/feature"
+	"github.com/mabaitar/gco/agent/pkg/resource"
 )
 
 // Spec describes the application specification in an 'as is' or 'should be' state.

@@ -1,9 +1,9 @@
 package diff
 
 import (
-	"revengy.io/gco/agent/internal/state"
-	"revengy.io/gco/agent/pkg/feature"
-	"revengy.io/gco/agent/pkg/resource"
+	"github.com/mabaitar/gco/agent/internal/state"
+	"github.com/mabaitar/gco/agent/pkg/feature"
+	"github.com/mabaitar/gco/agent/pkg/resource"
 )
 
 type TestProvider struct {

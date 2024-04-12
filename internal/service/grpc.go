@@ -1,15 +1,16 @@
 package service
 
 import (
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/reflection"
 	"net"
 	"os"
-	applicationv1 "revengy.io/gco/agent/gen/proto/application/v1"
-	"revengy.io/gco/agent/internal/config"
-	"revengy.io/gco/agent/internal/log"
-	"revengy.io/gco/agent/internal/service/application"
-	"revengy.io/gco/agent/pkg/control"
+
+	applicationv1 "github.com/mabaitar/gco/agent/gen/proto/application/v1"
+	"github.com/mabaitar/gco/agent/internal/config"
+	"github.com/mabaitar/gco/agent/internal/log"
+	"github.com/mabaitar/gco/agent/internal/service/application"
+	"github.com/mabaitar/gco/agent/pkg/control"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 )
 
 // StartGRPC registers the known services and starts listening using the configured address.

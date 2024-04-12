@@ -1,4 +1,4 @@
-module revengy.io/gco/agent
+module github.com/mabaitar/gco/agent
 
 go 1.19
 

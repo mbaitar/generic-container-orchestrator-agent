@@ -1,7 +1,7 @@
 package config
 
 import (
-	"revengy.io/gco/agent/internal/flag"
+	"github.com/mabaitar/gco/agent/internal/flag"
 )
 
 type Config struct {

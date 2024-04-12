@@ -2,13 +2,14 @@ package docker
 
 import (
 	"errors"
-	"github.com/docker/docker/api/types"
-	"github.com/stretchr/testify/assert"
-	"revengy.io/gco/agent/internal/files"
-	"revengy.io/gco/agent/pkg/feature"
-	"revengy.io/gco/agent/pkg/resource"
 	"strings"
 	"testing"
+
+	"github.com/docker/docker/api/types"
+	"github.com/mabaitar/gco/agent/internal/files"
+	"github.com/mabaitar/gco/agent/pkg/feature"
+	"github.com/mabaitar/gco/agent/pkg/resource"
+	"github.com/stretchr/testify/assert"
 )
 
 func SetupForTests(t *testing.T) {

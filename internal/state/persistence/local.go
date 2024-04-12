@@ -2,8 +2,9 @@ package persistence
 
 import (
 	"os"
-	"revengy.io/gco/agent/internal/log"
-	"revengy.io/gco/agent/internal/state"
+
+	"github.com/mabaitar/gco/agent/internal/log"
+	"github.com/mabaitar/gco/agent/internal/state"
 )
 
 type LocalController struct {

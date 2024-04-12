@@ -1,13 +1,14 @@
 package docker
 
 import (
+	"strings"
+	"testing"
+
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/go-connections/nat"
+	"github.com/mabaitar/gco/agent/pkg/resource"
 	"github.com/stretchr/testify/assert"
-	"revengy.io/gco/agent/pkg/resource"
-	"strings"
-	"testing"
 )
 
 func exampleDockerContainer() types.Container {

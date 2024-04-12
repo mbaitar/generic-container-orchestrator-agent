@@ -5,8 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
-	"revengy.io/gco/agent/internal/log"
-	"revengy.io/gco/agent/internal/state"
+
+	"github.com/mabaitar/gco/agent/internal/log"
+	"github.com/mabaitar/gco/agent/internal/state"
 )
 
 // WriteJson writes the given state to the io.Writer.

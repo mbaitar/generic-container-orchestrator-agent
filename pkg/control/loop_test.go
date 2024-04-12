@@ -1,13 +1,14 @@
 package control
 
 import (
-	"github.com/stretchr/testify/assert"
 	"log"
-	"revengy.io/gco/agent/internal/state"
-	"revengy.io/gco/agent/pkg/feature"
-	"revengy.io/gco/agent/pkg/resource"
 	"sync"
 	"testing"
+
+	"github.com/mabaitar/gco/agent/internal/state"
+	"github.com/mabaitar/gco/agent/pkg/feature"
+	"github.com/mabaitar/gco/agent/pkg/resource"
+	"github.com/stretchr/testify/assert"
 )
 
 type NilProvider struct {

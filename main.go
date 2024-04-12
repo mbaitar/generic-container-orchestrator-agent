@@ -2,12 +2,13 @@ package main
 
 import (
 	"os"
-	"revengy.io/gco/agent/internal/config"
-	"revengy.io/gco/agent/internal/log"
-	"revengy.io/gco/agent/internal/provider"
-	"revengy.io/gco/agent/internal/provider/docker"
-	"revengy.io/gco/agent/internal/service"
-	"revengy.io/gco/agent/pkg/control"
+
+	"github.com/mabaitar/gco/agent/internal/config"
+	"github.com/mabaitar/gco/agent/internal/log"
+	"github.com/mabaitar/gco/agent/internal/provider"
+	"github.com/mabaitar/gco/agent/internal/provider/docker"
+	"github.com/mabaitar/gco/agent/internal/service"
+	"github.com/mabaitar/gco/agent/pkg/control"
 )
 
 func createProvider(conf *config.Config) provider.Provider {

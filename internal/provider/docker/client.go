@@ -1,9 +1,10 @@
 package docker
 
 import (
-	docker "github.com/docker/docker/client"
 	"os"
-	"revengy.io/gco/agent/internal/log"
+
+	docker "github.com/docker/docker/client"
+	"github.com/mabaitar/gco/agent/internal/log"
 )
 
 func newDockerClient() docker.APIClient {

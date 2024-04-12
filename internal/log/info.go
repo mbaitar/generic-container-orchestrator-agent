@@ -2,7 +2,8 @@ package log
 
 import (
 	"fmt"
-	"revengy.io/gco/agent/internal/flag"
+
+	"github.com/mabaitar/gco/agent/internal/flag"
 )
 
 // Info prints out an informative message to StdOut.
