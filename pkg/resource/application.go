@@ -1,8 +1,8 @@
 package resource
 
 import (
-	applicationv1 "github.com/mabaitar/gco/agent/gen/proto/application/v1"
-	"github.com/mabaitar/gco/agent/internal/hash"
+	applicationv1 "github.com/mbaitar/gco/agent/gen/proto/application/v1"
+	"github.com/mbaitar/gco/agent/internal/hash"
 )
 
 // Application defines a structure which describes everything the application needs

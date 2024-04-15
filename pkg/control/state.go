@@ -4,11 +4,11 @@ import (
 	"os"
 	"path"
 
-	"github.com/mabaitar/gco/agent/internal/flag"
-	"github.com/mabaitar/gco/agent/internal/log"
-	"github.com/mabaitar/gco/agent/internal/state"
-	"github.com/mabaitar/gco/agent/internal/state/persistence"
-	"github.com/mabaitar/gco/agent/pkg/resource"
+	"github.com/mbaitar/gco/agent/internal/flag"
+	"github.com/mbaitar/gco/agent/internal/log"
+	"github.com/mbaitar/gco/agent/internal/state"
+	"github.com/mbaitar/gco/agent/internal/state/persistence"
+	"github.com/mbaitar/gco/agent/pkg/resource"
 )
 
 // StateController is a controller structure which manages the internal desired state of the application.

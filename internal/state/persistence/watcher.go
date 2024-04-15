@@ -4,8 +4,8 @@ import (
 	"os"
 
 	"github.com/fsnotify/fsnotify"
-	"github.com/mabaitar/gco/agent/internal/log"
-	"github.com/mabaitar/gco/agent/internal/state"
+	"github.com/mbaitar/gco/agent/internal/log"
+	"github.com/mbaitar/gco/agent/internal/state"
 )
 
 type ChangeHandler func(s *state.Spec)

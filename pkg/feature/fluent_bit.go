@@ -5,8 +5,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/mabaitar/gco/agent/internal/hash"
-	"github.com/mabaitar/gco/agent/pkg/resource"
+	"github.com/mbaitar/gco/agent/internal/hash"
+	"github.com/mbaitar/gco/agent/pkg/resource"
 )
 
 type FluentBit struct {

@@ -3,9 +3,9 @@ package application
 import (
 	"context"
 
-	applicationv1 "github.com/mabaitar/gco/agent/gen/proto/application/v1"
-	"github.com/mabaitar/gco/agent/pkg/control"
-	"github.com/mabaitar/gco/agent/pkg/resource"
+	applicationv1 "github.com/mbaitar/gco/agent/gen/proto/application/v1"
+	"github.com/mbaitar/gco/agent/pkg/control"
+	"github.com/mbaitar/gco/agent/pkg/resource"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )

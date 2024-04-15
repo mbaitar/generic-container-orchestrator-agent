@@ -1,9 +1,9 @@
 package diff
 
 import (
-	"github.com/mabaitar/gco/agent/internal/log"
-	"github.com/mabaitar/gco/agent/internal/provider"
-	"github.com/mabaitar/gco/agent/internal/state"
+	"github.com/mbaitar/gco/agent/internal/log"
+	"github.com/mbaitar/gco/agent/internal/provider"
+	"github.com/mbaitar/gco/agent/internal/state"
 )
 
 // Reconciler defines a structure that is responsible for the reconciliation process

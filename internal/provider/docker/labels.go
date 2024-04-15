@@ -3,7 +3,7 @@ package docker
 import (
 	"fmt"
 
-	"github.com/mabaitar/gco/agent/pkg/resource"
+	"github.com/mbaitar/gco/agent/pkg/resource"
 )
 
 // labelPrefix is the prefix used for the labels associated with GCO

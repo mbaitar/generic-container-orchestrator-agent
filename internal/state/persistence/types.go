@@ -1,7 +1,7 @@
 package persistence
 
 import (
-	"github.com/mabaitar/gco/agent/internal/state"
+	"github.com/mbaitar/gco/agent/internal/state"
 )
 
 // ChangeChannel defines a channel used for read only messages of a changed State.

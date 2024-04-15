@@ -1,5 +1,5 @@
 BINARY := out/agent
-PACKAGE_NAME := github.com/mabaitar/gco/agent
+PACKAGE_NAME := github.com/mbaitar/gco/agent
 
 VERSION := v0.1.0
 BUILD := $(shell date +%Y%m%d)

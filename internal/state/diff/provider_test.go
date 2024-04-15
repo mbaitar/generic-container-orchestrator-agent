@@ -1,9 +1,9 @@
 package diff
 
 import (
-	"github.com/mabaitar/gco/agent/internal/state"
-	"github.com/mabaitar/gco/agent/pkg/feature"
-	"github.com/mabaitar/gco/agent/pkg/resource"
+	"github.com/mbaitar/gco/agent/internal/state"
+	"github.com/mbaitar/gco/agent/pkg/feature"
+	"github.com/mbaitar/gco/agent/pkg/resource"
 )
 
 type TestProvider struct {

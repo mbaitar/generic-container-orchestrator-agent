@@ -1,7 +1,7 @@
 package state
 
 import (
-	"github.com/mabaitar/gco/agent/pkg/feature"
+	"github.com/mbaitar/gco/agent/pkg/feature"
 )
 
 // Evaluate updates the current application specifications based on the enabled features.

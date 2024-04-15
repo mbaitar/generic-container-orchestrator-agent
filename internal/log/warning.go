@@ -3,7 +3,7 @@ package log
 import (
 	"fmt"
 
-	"github.com/mabaitar/gco/agent/internal/flag"
+	"github.com/mbaitar/gco/agent/internal/flag"
 )
 
 // Warn prints out a warning message to StdOut.

@@ -10,11 +10,11 @@ import (
 	"net/http"
 	"os"
 
-	applicationv1 "github.com/mabaitar/gco/agent/gen/proto/application/v1"
-	"github.com/mabaitar/gco/agent/internal/config"
-	"github.com/mabaitar/gco/agent/internal/log"
-	"github.com/mabaitar/gco/agent/internal/service/application"
-	"github.com/mabaitar/gco/agent/pkg/control"
+	applicationv1 "github.com/mbaitar/gco/agent/gen/proto/application/v1"
+	"github.com/mbaitar/gco/agent/internal/config"
+	"github.com/mbaitar/gco/agent/internal/log"
+	"github.com/mbaitar/gco/agent/internal/service/application"
+	"github.com/mbaitar/gco/agent/pkg/control"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
