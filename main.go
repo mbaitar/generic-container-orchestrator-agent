@@ -3,12 +3,12 @@ package main
 import (
 	"os"
 
-	"github.com/mabaitar/gco/agent/internal/config"
-	"github.com/mabaitar/gco/agent/internal/log"
-	"github.com/mabaitar/gco/agent/internal/provider"
-	"github.com/mabaitar/gco/agent/internal/provider/docker"
-	"github.com/mabaitar/gco/agent/internal/service"
-	"github.com/mabaitar/gco/agent/pkg/control"
+	"github.com/mbaitar/gco/agent/internal/config"
+	"github.com/mbaitar/gco/agent/internal/log"
+	"github.com/mbaitar/gco/agent/internal/provider"
+	"github.com/mbaitar/gco/agent/internal/provider/docker"
+	"github.com/mbaitar/gco/agent/internal/service"
+	"github.com/mbaitar/gco/agent/pkg/control"
 )
 
 func createProvider(conf *config.Config) provider.Provider {

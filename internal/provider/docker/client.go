@@ -4,7 +4,7 @@ import (
 	"os"
 
 	docker "github.com/docker/docker/client"
-	"github.com/mabaitar/gco/agent/internal/log"
+	"github.com/mbaitar/gco/agent/internal/log"
 )
 
 func newDockerClient() docker.APIClient {

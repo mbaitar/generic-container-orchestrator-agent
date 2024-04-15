@@ -1,7 +1,7 @@
 package config
 
 import (
-	"github.com/mabaitar/gco/agent/internal/flag"
+	"github.com/mbaitar/gco/agent/internal/flag"
 )
 
 type Config struct {

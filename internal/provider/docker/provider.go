@@ -2,11 +2,11 @@ package docker
 
 import (
 	docker "github.com/docker/docker/client"
-	"github.com/mabaitar/gco/agent/internal/config"
-	"github.com/mabaitar/gco/agent/internal/provider"
-	"github.com/mabaitar/gco/agent/internal/state"
-	"github.com/mabaitar/gco/agent/pkg/feature"
-	"github.com/mabaitar/gco/agent/pkg/resource"
+	"github.com/mbaitar/gco/agent/internal/config"
+	"github.com/mbaitar/gco/agent/internal/provider"
+	"github.com/mbaitar/gco/agent/internal/state"
+	"github.com/mbaitar/gco/agent/pkg/feature"
+	"github.com/mbaitar/gco/agent/pkg/resource"
 )
 
 // Provider defines a docker provider which can communicate with the local docker socket.

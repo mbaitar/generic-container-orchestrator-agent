@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/fsnotify/fsnotify"
-	"github.com/mabaitar/gco/agent/internal/state"
+	"github.com/mbaitar/gco/agent/internal/state"
 	"github.com/stretchr/testify/assert"
 )
 

@@ -6,9 +6,9 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/filters"
-	"github.com/mabaitar/gco/agent/internal/files"
-	"github.com/mabaitar/gco/agent/internal/log"
-	"github.com/mabaitar/gco/agent/pkg/resource"
+	"github.com/mbaitar/gco/agent/internal/files"
+	"github.com/mbaitar/gco/agent/internal/log"
+	"github.com/mbaitar/gco/agent/pkg/resource"
 )
 
 // startContainer allows the provider to start a container using their known container id.

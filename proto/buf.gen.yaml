@@ -3,8 +3,8 @@ plugins:
   - plugin: go
     out: ../
     opt:
-      - module=github.com/mabaitar/gco/agent
+      - module=github.com/mbaitar/gco/agent
   - plugin: go-grpc
     out: ../
     opt:
-      - module=github.com/mabaitar/gco/agent
+      - module=github.com/mbaitar/gco/agent

@@ -5,8 +5,8 @@ import (
 	"os"
 	"path"
 
-	"github.com/mabaitar/gco/agent/internal/hash"
-	"github.com/mabaitar/gco/agent/internal/log"
+	"github.com/mbaitar/gco/agent/internal/hash"
+	"github.com/mbaitar/gco/agent/internal/log"
 )
 
 // directory specifies the directory to use when writing configuration files.

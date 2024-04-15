@@ -8,7 +8,7 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/go-connections/nat"
-	"github.com/mabaitar/gco/agent/pkg/resource"
+	"github.com/mbaitar/gco/agent/pkg/resource"
 )
 
 // containerPort describes a port exposed by a container.

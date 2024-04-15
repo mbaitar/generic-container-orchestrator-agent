@@ -7,7 +7,7 @@ import (
 	"testing"
 	"testing/iotest"
 
-	"github.com/mabaitar/gco/agent/pkg/resource"
+	"github.com/mbaitar/gco/agent/pkg/resource"
 	"github.com/stretchr/testify/assert"
 )
 

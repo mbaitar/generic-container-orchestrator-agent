@@ -1,4 +1,4 @@
-module github.com/mabaitar/gco/agent
+module github.com/mbaitar/gco/agent
 
 go 1.19
 

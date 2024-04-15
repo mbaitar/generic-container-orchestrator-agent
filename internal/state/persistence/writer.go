@@ -6,8 +6,8 @@ import (
 	"errors"
 	"io"
 
-	"github.com/mabaitar/gco/agent/internal/log"
-	"github.com/mabaitar/gco/agent/internal/state"
+	"github.com/mbaitar/gco/agent/internal/log"
+	"github.com/mbaitar/gco/agent/internal/state"
 )
 
 // WriteJson writes the given state to the io.Writer.

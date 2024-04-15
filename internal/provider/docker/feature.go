@@ -3,9 +3,9 @@ package docker
 import (
 	"fmt"
 
-	"github.com/mabaitar/gco/agent/internal/files"
-	"github.com/mabaitar/gco/agent/pkg/feature"
-	"github.com/mabaitar/gco/agent/pkg/resource"
+	"github.com/mbaitar/gco/agent/internal/files"
+	"github.com/mbaitar/gco/agent/pkg/feature"
+	"github.com/mbaitar/gco/agent/pkg/resource"
 )
 
 // createFluentBitContainer creates an internal container definition based on the feature.FluentBit configuration.
