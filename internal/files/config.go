@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+
 	"revengy.io/gco/agent/internal/hash"
 	"revengy.io/gco/agent/internal/log"
 )
@@ -20,11 +21,11 @@ func SetDirectory(dir string) {
 func GetDirectory() (string, error) {
 	dir := directory
 	if dir == "" {
-		dir = "/etc/gco"
+		dir = "/tmp/gco"
 	}
 
 	// create directory structure if it does not exist
-	err := os.MkdirAll(dir, 0744)
+	err := os.MkdirAll(dir, 0777)
 	if err != nil {
 		return "", fmt.Errorf("failed creating config dir: %v", err)
 	}
