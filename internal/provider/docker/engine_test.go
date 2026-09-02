@@ -201,7 +201,7 @@ func TestProvider_getFilteredContainers_clientError(t *testing.T) {
 	assert.Nil(t, containers, "should have returned a nil list")
 }
 
-func TestProvider_getContainerByName(t *testing.T) {
+func TestProvider_getContainersByName(t *testing.T) {
 	client := NewTestClient()
 	provider := &Provider{client: client}
 
@@ -210,9 +210,9 @@ func TestProvider_getContainerByName(t *testing.T) {
 	client.containerListReturnContainers = []container.Summary{dc}
 	client.containerInspectReturn = []container.InspectResponse{exampleDockerContainerJson()}
 
-	c, err := provider.getContainerByName(context.Background(), dc.Names[0])
+	c, err := provider.getContainersByName(context.Background(), dc.Names[0])
 	assert.Nil(t, err, "should not have thrown an error")
-	assert.NotNil(t, c, "should have returned a container")
+	assert.Equal(t, 1, len(c), "should have returned a container")
 
 	// verify args
 	if assert.Equal(t, 1, len(client.containerListArgs), "should have called client.ContainerList()") {
@@ -239,13 +239,13 @@ func TestProvider_getContainerByName(t *testing.T) {
 	}
 }
 
-func TestProvider_getContainerByName_noMatch(t *testing.T) {
+func TestProvider_getContainersByName_noMatch(t *testing.T) {
 	client := NewTestClient()
 	provider := &Provider{client: client}
 
-	c, err := provider.getContainerByName(context.Background(), "no matches")
+	c, err := provider.getContainersByName(context.Background(), "no matches")
 	assert.Nil(t, err, "should not have thrown an error")
-	assert.Nil(t, c, "should not have returned a container")
+	assert.Equal(t, 0, len(c), "should not have returned a container")
 }
 
 func TestProvider_verifyImage_always(t *testing.T) {

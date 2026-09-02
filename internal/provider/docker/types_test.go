@@ -104,7 +104,8 @@ func TestInternalContainer_fromApplicationResource(t *testing.T) {
 
 	c, err := fromApplicationResource(application)
 	assert.Nil(t, err, "should not have returned an error")
-	assert.Equal(t, "postgres", c.name)
+	assert.Equal(t, containerName(application), c.name)
+	assert.True(t, strings.HasPrefix(c.name, "postgres-"), "should carry the short hash suffix")
 	assert.Equal(t, "postgres:latest", c.image)
 	assert.Equal(t, "5432", c.ports[0].publicPort())
 	assert.Equal(t, "5432", c.ports[0].privatePort())

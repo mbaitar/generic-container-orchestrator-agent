@@ -81,6 +81,33 @@ the same shape applies to the gRPC API):
   minimum of `6m` (the docker daemon minimum).
 - A volume `source` is either an absolute host path or the name of a docker volume.
 
+## Zero-downtime updates
+
+Configuration changes are rolled out with as little downtime as possible:
+
+1. The new image is pulled and the replacement container is created while the
+   old container keeps serving.
+2. The replacement is started next to the old container and has to prove it is
+   healthy: a configured (or image defined) health check must report `healthy`,
+   a container without one must still be running after a short settle period.
+3. Only then is the old container removed.
+
+When both versions cannot run at the same time — they publish the same host
+port, share a writable volume, or run on the host network — the old container
+is stopped (not removed) right before starting the replacement, keeping the
+interruption to a fraction of a second and the old container available for
+rollback.
+
+If the replacement fails to become healthy the update is **rolled back**: the
+replacement is removed, the old container keeps running (or is restarted), and
+the failed configuration is not retried for 5 minutes so a broken spec cannot
+disrupt a running application on every reconcile cycle.
+
+Because the new and old container briefly coexist, docker container names carry
+a short configuration hash (e.g. `my-app-0cb088a3`). Address containers through
+the `gco.io/name` label rather than the docker name, e.g.
+`docker ps --filter label=gco.io/name=my-app`.
+
 ## Supported Providers
 
 | Provider     | Description                                                                                                                                    | Version   |

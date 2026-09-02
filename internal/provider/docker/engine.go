@@ -17,6 +17,12 @@ func (p *Provider) startContainer(ctx context.Context, id string) error {
 	return p.client.ContainerStart(ctx, id, container.StartOptions{})
 }
 
+// stopContainer gracefully stops a container without removing it, using the
+// default stop timeout so the process can shut down cleanly.
+func (p *Provider) stopContainer(ctx context.Context, id string) error {
+	return p.client.ContainerStop(ctx, id, container.StopOptions{})
+}
+
 // createContainer creates a new container and returns the container id if successful.
 func (p *Provider) createContainer(ctx context.Context, c *internalContainer) (string, error) {
 	err := p.verifyImage(ctx, c.image, c.pullPolicy)
@@ -88,22 +94,15 @@ func (p *Provider) getFilteredContainers(ctx context.Context, opts *container.Li
 	return parsed, nil
 }
 
-// getContainerByName searched for a container with a matching name label.
-func (p *Provider) getContainerByName(ctx context.Context, name string) (*internalContainer, error) {
+// getContainersByName searches for all containers with a matching name label.
+// During a rolling update, or after an interrupted one, multiple containers can
+// carry the same application name.
+func (p *Provider) getContainersByName(ctx context.Context, name string) ([]internalContainer, error) {
 	opts := &container.ListOptions{All: true}
 	opts.Filters = filters.NewArgs()
 	opts.Filters.Add("label", nameLabel(name).string())
 
-	containers, err := p.getFilteredContainers(ctx, opts)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(containers) == 0 {
-		return nil, nil
-	} else {
-		return &containers[0], nil
-	}
+	return p.getFilteredContainers(ctx, opts)
 }
 
 // getFeatureByName searches for a feature with the matching name using the feature label.

@@ -78,6 +78,19 @@ func volumeMountFromBind(bind string) *volumeMount {
 	}
 }
 
+// containerName builds the docker container name for an application. The name
+// carries a short configuration hash so that during a rolling update the new
+// container can exist next to the old one; the application is identified by
+// the name label, not by the docker name.
+func containerName(app *resource.Application) string {
+	h := app.CalculateHash()
+	if len(h) < 8 {
+		return app.Name
+	}
+
+	return fmt.Sprintf("%s-%s", app.Name, h[:8])
+}
+
 // internalContainer describes the internal structure on how the docker provider handles container data.
 type internalContainer struct {
 	id         string
@@ -100,13 +113,14 @@ type internalContainer struct {
 
 func fromDockerContainer(c container.InspectResponse) internalContainer {
 	ic := &internalContainer{
-		id:      c.ID,
-		name:    c.Name,
-		image:   c.Config.Image,
-		labels:  c.Config.Labels,
-		ports:   make([]containerPort, 0),
-		state:   c.State.Status,
-		volumes: make([]volumeMount, 0),
+		id:          c.ID,
+		name:        c.Name,
+		image:       c.Config.Image,
+		labels:      c.Config.Labels,
+		ports:       make([]containerPort, 0),
+		state:       c.State.Status,
+		volumes:     make([]volumeMount, 0),
+		networkMode: string(c.HostConfig.NetworkMode),
 	}
 
 	if ic.image == "" {
@@ -137,7 +151,7 @@ func fromDockerContainer(c container.InspectResponse) internalContainer {
 
 func fromApplicationResource(app *resource.Application) (*internalContainer, error) {
 	ic := &internalContainer{
-		name:   app.Name,
+		name:   containerName(app),
 		image:  fmt.Sprintf("%s:%s", app.Image.Name, app.Image.Tag),
 		ports:  make([]containerPort, len(app.Ports)),
 		labels: make(map[string]string),
@@ -284,6 +298,55 @@ func (i *internalContainer) hostConfig() *container.HostConfig {
 	}
 
 	return hostConfig
+}
+
+// publishedHostPorts returns the set of host port/protocol pairs the container publishes.
+func (i *internalContainer) publishedHostPorts() map[string]struct{} {
+	ports := make(map[string]struct{})
+	for _, port := range i.ports {
+		public := port.publicPort()
+		if public == "" || public == "0" {
+			continue
+		}
+
+		ports[fmt.Sprintf("%s/%s", public, port.protocol())] = struct{}{}
+	}
+
+	return ports
+}
+
+// sharesResourcesWith reports whether starting the other container while this
+// one is still running would conflict: either runs on the host network, both
+// publish the same host port, or both mount the same volume source with at
+// least one of them writable.
+func (i *internalContainer) sharesResourcesWith(other *internalContainer) bool {
+	// on the host network the processes themselves bind host ports, two
+	// versions of the same application would always collide
+	if i.networkMode == "host" || other.networkMode == "host" {
+		return true
+	}
+
+	ports := i.publishedHostPorts()
+	for public := range other.publishedHostPorts() {
+		if _, conflict := ports[public]; conflict {
+			return true
+		}
+	}
+
+	sources := make(map[string]bool)
+	for _, volume := range i.volumes {
+		sources[volume.source] = volume.readonly
+	}
+
+	for _, volume := range other.volumes {
+		if readonly, shared := sources[volume.source]; shared {
+			if !readonly || !volume.readonly {
+				return true
+			}
+		}
+	}
+
+	return false
 }
 
 func (i *internalContainer) addLabel(label label) {

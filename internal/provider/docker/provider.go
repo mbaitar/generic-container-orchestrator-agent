@@ -2,9 +2,11 @@ package docker
 
 import (
 	"context"
+	"time"
 
 	docker "github.com/docker/docker/client"
 	"github.com/mbaitar/gco/agent/internal/config"
+	"github.com/mbaitar/gco/agent/internal/log"
 	"github.com/mbaitar/gco/agent/internal/provider"
 	"github.com/mbaitar/gco/agent/internal/state"
 	"github.com/mbaitar/gco/agent/pkg/feature"
@@ -17,6 +19,18 @@ type Provider struct {
 	client docker.APIClient
 	// addComposeLabel adds the docker compose project label.
 	addComposeLabel bool
+
+	// failedUpdates remembers failed rolling updates per application so a
+	// broken specification is not retried on every resync.
+	failedUpdates map[string]updateFailure
+
+	// healthPollInterval, settleDuration, updateBackoff and
+	// healthDeadlineOverride tune the rolling update behaviour, zero values
+	// fall back to the package defaults.
+	healthPollInterval     time.Duration
+	settleDuration         time.Duration
+	updateBackoff          time.Duration
+	healthDeadlineOverride time.Duration
 }
 
 func NewDockerProvider() *Provider {
@@ -24,6 +38,7 @@ func NewDockerProvider() *Provider {
 	return &Provider{
 		client:          client,
 		addComposeLabel: false,
+		failedUpdates:   make(map[string]updateFailure),
 	}
 }
 
@@ -52,24 +67,60 @@ func (p *Provider) CreateApplication(ctx context.Context, app *resource.Applicat
 }
 
 func (p *Provider) UpdateApplication(ctx context.Context, app *resource.Application) error {
-	if err := p.RemoveApplication(ctx, app); err != nil {
-		return err
-	}
-
-	return p.CreateApplication(ctx, app)
-}
-
-func (p *Provider) RemoveApplication(ctx context.Context, app *resource.Application) error {
-	container, err := p.getContainerByName(ctx, app.Name)
+	containers, err := p.getContainersByName(ctx, app.Name)
 	if err != nil {
 		return err
 	}
 
-	if container == nil {
-		return provider.ErrAppNotFound
-	} else {
-		return p.removeContainer(ctx, container.id)
+	// pick the running container as the current version, everything else is
+	// stale (exited containers, leftovers from an interrupted update)
+	var current *internalContainer
+	for i := range containers {
+		if current == nil && containers[i].state == "running" {
+			current = &containers[i]
+			continue
+		}
+
+		if err := p.removeContainer(ctx, containers[i].id); err != nil {
+			log.Warnf("Failed to remove stale container of application '%s': %v", app.Name, err)
+		}
 	}
+
+	if current == nil {
+		// nothing is running (e.g. self-healing after a crash), a plain
+		// create is the fastest way back up
+		return p.CreateApplication(ctx, app)
+	}
+
+	if current.getLabel(hashLabelTag) == app.CalculateHash() {
+		// already converged, e.g. after cleaning up a duplicate
+		return nil
+	}
+
+	return p.rollingUpdate(ctx, current, app)
+}
+
+func (p *Provider) RemoveApplication(ctx context.Context, app *resource.Application) error {
+	containers, err := p.getContainersByName(ctx, app.Name)
+	if err != nil {
+		return err
+	}
+
+	if len(containers) == 0 {
+		return provider.ErrAppNotFound
+	}
+
+	for i := range containers {
+		if err := p.removeContainer(ctx, containers[i].id); err != nil {
+			return err
+		}
+	}
+
+	// a removed application should not inherit an old backoff window when it
+	// is recreated later
+	delete(p.failedUpdates, app.Name)
+
+	return nil
 }
 
 func (p *Provider) CreateFeature(ctx context.Context, feat feature.Feature) error {
@@ -139,10 +190,44 @@ func (p *Provider) ActualState(ctx context.Context) (*state.Spec, error) {
 		return nil, err
 	}
 
-	applications := make([]resource.Application, 0)
+	// after an interrupted or partially failed rolling update, multiple
+	// containers can carry the same application name; keep the preferred one
+	// (running, newest first in the docker listing) and remove the rest, as
+	// no other code path revisits leftovers once the state has converged
+	grouped := make(map[string][]internalContainer)
+	order := make([]string, 0, len(appContainers))
 	for _, container := range appContainers {
-		app := container.toApplicationResource()
-		applications = append(applications, app)
+		name := container.getLabel(nameLabelTag)
+		if _, seen := grouped[name]; !seen {
+			order = append(order, name)
+		}
+		grouped[name] = append(grouped[name], container)
+	}
+
+	applications := make([]resource.Application, 0, len(order))
+	for _, name := range order {
+		group := grouped[name]
+
+		preferred := 0
+		for i := range group {
+			if group[i].state == "running" {
+				preferred = i
+				break
+			}
+		}
+
+		for i := range group {
+			if i == preferred {
+				continue
+			}
+
+			log.Warnf("Cleaning up stale container '%s' of application '%s'", group[i].name, name)
+			if err := p.removeContainer(ctx, group[i].id); err != nil {
+				log.Warnf("Failed to remove stale container of application '%s': %v", name, err)
+			}
+		}
+
+		applications = append(applications, group[preferred].toApplicationResource())
 	}
 
 	// extract features

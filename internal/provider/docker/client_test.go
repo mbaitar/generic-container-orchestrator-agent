@@ -27,6 +27,10 @@ type TestClient struct {
 	containerRemoveArgs   [][]any
 	containerRemoveReturn error
 
+	// ContainerStop
+	containerStopArgs   [][]any
+	containerStopReturn error
+
 	// ContainerList
 	containerListArgs             [][]any
 	containerListReturnContainers []container.Summary
@@ -93,6 +97,16 @@ func (t *TestClient) ContainerList(ctx context.Context, options container.ListOp
 
 	t.containerListArgs = append(t.containerListArgs, args)
 	return t.containerListReturnContainers, t.containerListReturnErr
+}
+
+func (t *TestClient) ContainerStop(ctx context.Context, id string, options container.StopOptions) error {
+	args := make([]any, 3)
+	args[0] = ctx
+	args[1] = id
+	args[2] = options
+
+	t.containerStopArgs = append(t.containerStopArgs, args)
+	return t.containerStopReturn
 }
 
 func (t *TestClient) ContainerRemove(ctx context.Context, container string, options container.RemoveOptions) error {

@@ -6,6 +6,7 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/mbaitar/gco/agent/internal/files"
 	"github.com/mbaitar/gco/agent/pkg/feature"
@@ -145,18 +146,24 @@ func TestProvider_UpdateApplication(t *testing.T) {
 	}
 
 	client.containerListReturnContainers = []container.Summary{exampleDockerContainer()}
-	client.containerInspectReturn = []container.InspectResponse{exampleDockerContainerJson()}
+
+	// first inspect resolves the listed container, the second verifies the
+	// replacement container is still running after the settle period
+	client.containerInspectReturn = []container.InspectResponse{exampleDockerContainerJson(), exampleDockerContainerJson()}
+	provider.settleDuration = 10 * time.Millisecond
 
 	err := provider.UpdateApplication(context.Background(), app)
 	assert.Nil(t, err, "should not have thrown an error")
 
 	assert.Equal(t, 1, len(client.containerListArgs))
-	assert.Equal(t, 1, len(client.containerRemoveArgs))
 
-	// all default create calls
+	// rolling update: the new container is created and started next to the
+	// old one, the old one is only removed once the new one settled
 	assert.Equal(t, 1, len(client.imagePullArgs))
 	assert.Equal(t, 1, len(client.containerCreateArgs))
 	assert.Equal(t, 1, len(client.containerStartArgs))
+	assert.Equal(t, 0, len(client.containerStopArgs), "should not stop the old container without shared ports or volumes")
+	assert.Equal(t, 1, len(client.containerRemoveArgs))
 }
 
 func TestProvider_UpdateApplication_noMatchingContainer(t *testing.T) {
@@ -176,19 +183,20 @@ func TestProvider_UpdateApplication_noMatchingContainer(t *testing.T) {
 
 	client.containerListReturnContainers = []container.Summary{}
 
+	// without a running container the update falls back to a plain create
 	err := provider.UpdateApplication(context.Background(), app)
-	assert.NotNil(t, err, "should have thrown an error")
+	assert.Nil(t, err, "should not have thrown an error")
 
 	assert.Equal(t, 1, len(client.containerListArgs))
 	assert.Equal(t, 0, len(client.containerRemoveArgs))
 
 	// all default create calls
-	assert.Equal(t, 0, len(client.imagePullArgs))
-	assert.Equal(t, 0, len(client.containerCreateArgs))
-	assert.Equal(t, 0, len(client.containerStartArgs))
+	assert.Equal(t, 1, len(client.imagePullArgs))
+	assert.Equal(t, 1, len(client.containerCreateArgs))
+	assert.Equal(t, 1, len(client.containerStartArgs))
 }
 
-func TestProvider_UpdateApplication_removeError(t *testing.T) {
+func TestProvider_UpdateApplication_removeOldError(t *testing.T) {
 	client := NewTestClient()
 	provider := &Provider{client: client}
 
@@ -204,19 +212,22 @@ func TestProvider_UpdateApplication_removeError(t *testing.T) {
 	}
 
 	client.containerListReturnContainers = []container.Summary{exampleDockerContainer()}
-	client.containerInspectReturn = []container.InspectResponse{exampleDockerContainerJson()}
+	client.containerInspectReturn = []container.InspectResponse{exampleDockerContainerJson(), exampleDockerContainerJson()}
 	client.containerRemoveReturn = errors.New("testing error")
+	provider.settleDuration = 10 * time.Millisecond
 
+	// failing to remove the retired container is logged but does not fail
+	// the update, the replacement is already healthy at that point
 	err := provider.UpdateApplication(context.Background(), app)
-	assert.NotNil(t, err, "should have thrown an error")
+	assert.Nil(t, err, "should not have thrown an error")
 
 	assert.Equal(t, 1, len(client.containerListArgs))
 	assert.Equal(t, 1, len(client.containerRemoveArgs))
 
 	// all default create calls
-	assert.Equal(t, 0, len(client.imagePullArgs))
-	assert.Equal(t, 0, len(client.containerCreateArgs))
-	assert.Equal(t, 0, len(client.containerStartArgs))
+	assert.Equal(t, 1, len(client.imagePullArgs))
+	assert.Equal(t, 1, len(client.containerCreateArgs))
+	assert.Equal(t, 1, len(client.containerStartArgs))
 }
 
 func TestProvider_UpdateApplication_getContainerError(t *testing.T) {
