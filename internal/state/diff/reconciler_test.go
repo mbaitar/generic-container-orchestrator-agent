@@ -1,6 +1,7 @@
 package diff
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -33,14 +34,14 @@ func TestReconciler_Apply(t *testing.T) {
 
 	// it will verify the changes by pulling the actual state from the provider
 	provider.actualReturn = desired
-	reconciler.Apply(desired)
+	reconciler.Apply(context.Background(), desired)
 	assert.Equal(t, 1, len(provider.createCalls), "should have created one new app")
 	assert.Equal(t, 1, provider.actualCalls, "should have called ActualState()")
 
 	provider.reset()
 
 	// actual state equals requested desired state
-	reconciler.Apply(desired)
+	reconciler.Apply(context.Background(), desired)
 	assert.Equal(t, 0, len(provider.createCalls), "should not have tried to re add the same application")
 	assert.Equal(t, 0, provider.actualCalls, "should not have called ActualState()")
 
@@ -48,7 +49,7 @@ func TestReconciler_Apply(t *testing.T) {
 
 	// remove the created application
 	provider.actualReturn = state.EmptySpec()
-	reconciler.Apply(state.EmptySpec())
+	reconciler.Apply(context.Background(), state.EmptySpec())
 	assert.Equal(t, 1, len(provider.removeCalls), "should have removed the application")
 	assert.Equal(t, 1, provider.actualCalls, "should have called ActualState()")
 
@@ -56,7 +57,7 @@ func TestReconciler_Apply(t *testing.T) {
 
 	// next create call will fail
 	provider.createErr = errors.New("test error")
-	reconciler.Apply(desired)
+	reconciler.Apply(context.Background(), desired)
 	assert.Equal(t, 1, len(provider.createCalls), "should have tried to create an application")
 	assert.Equal(t, 0, provider.actualCalls, "should not have called ActualState()")
 }
@@ -75,7 +76,7 @@ func TestReconciler_Apply_actualStateError(t *testing.T) {
 
 	provider.actualReturn = state.EmptySpec()
 	provider.actualErr = errors.New("test error")
-	reconciler.Apply(state.EmptySpec())
+	reconciler.Apply(context.Background(), state.EmptySpec())
 
 	assert.Equal(t, 1, len(provider.removeCalls), "should have removed an application")
 	assert.Equal(t, 1, provider.actualCalls, "should have called ActualState()")
@@ -94,7 +95,7 @@ func TestReconciler_Apply_removalError(t *testing.T) {
 	reconciler := InitReconciler(provider).WithInitialActualState(actual)
 
 	provider.removeErr = errors.New("test error")
-	reconciler.Apply(state.EmptySpec())
+	reconciler.Apply(context.Background(), state.EmptySpec())
 
 	assert.Equal(t, 1, len(provider.removeCalls), "should have tried to remove an application")
 	assert.Equal(t, 0, provider.actualCalls, "should not have called ActualState()")
@@ -120,7 +121,7 @@ func TestReconciler_Apply_update(t *testing.T) {
 	provider := &TestProvider{}
 	provider.actualReturn = desired
 	reconciler := InitReconciler(provider).WithInitialActualState(actual)
-	reconciler.Apply(desired)
+	reconciler.Apply(context.Background(), desired)
 
 	assert.Equal(t, 1, len(provider.updateCalls), "should have updated the application")
 	assert.Equal(t, 1, provider.actualCalls, "should have called ActualState()")
@@ -128,7 +129,7 @@ func TestReconciler_Apply_update(t *testing.T) {
 	provider.reset()
 
 	provider.updateErr = errors.New("test error")
-	reconciler.Apply(actual)
+	reconciler.Apply(context.Background(), actual)
 
 	assert.Equal(t, 1, len(provider.updateCalls), "should have tried to update the application")
 	assert.Equal(t, 0, provider.actualCalls, "should not have called ActualState()")
@@ -153,7 +154,7 @@ func TestReconciler_Observe(t *testing.T) {
 	}
 
 	reconciler.desired = desired
-	reconciler.Observe(actual)
+	reconciler.Observe(context.Background(), actual)
 
 	assert.Equal(t, 1, len(provider.createCalls), "should have created a new application")
 	assert.Equal(t, 0, provider.actualCalls, "should not have to re-fetch ActualState()")
@@ -172,7 +173,7 @@ func TestReconciler_Apply_creatingFeature(t *testing.T) {
 	}
 
 	reconciler.WithInitialActualState(actual)
-	reconciler.Apply(desired)
+	reconciler.Apply(context.Background(), desired)
 
 	assert.Equal(t, 1, len(provider.createFeatCalls), "should have called #CreateFeature()")
 	assert.Equal(t, 1, provider.actualCalls, "should have called #ActualState()")
@@ -193,7 +194,7 @@ func TestReconciler_Apply_creatingFeatureWithError(t *testing.T) {
 	provider.createFeatErr = errors.New("unable to create feature")
 
 	reconciler.WithInitialActualState(actual)
-	reconciler.Apply(desired)
+	reconciler.Apply(context.Background(), desired)
 
 	assert.Equal(t, 1, len(provider.createFeatCalls), "should have called #CreateFeature()")
 	assert.Equal(t, 0, provider.actualCalls, "should not have called #ActualState()")
@@ -217,7 +218,7 @@ func TestReconciler_Apply_updateFeature(t *testing.T) {
 	}
 
 	reconciler.WithInitialActualState(actual)
-	reconciler.Apply(desired)
+	reconciler.Apply(context.Background(), desired)
 
 	assert.Equal(t, 1, len(provider.updateFeatCalls), "should have called #UpdateFeature()")
 	assert.Equal(t, 1, provider.actualCalls, "should have called #ActualState()")
@@ -243,7 +244,7 @@ func TestReconciler_Apply_updateFeatureWithError(t *testing.T) {
 	provider.updateFeatErr = errors.New("unable to update feature")
 
 	reconciler.WithInitialActualState(actual)
-	reconciler.Apply(desired)
+	reconciler.Apply(context.Background(), desired)
 
 	assert.Equal(t, 1, len(provider.updateFeatCalls), "should have called #UpdateFeature()")
 	assert.Equal(t, 0, provider.actualCalls, "should not have called #ActualState()")
@@ -262,7 +263,7 @@ func TestReconciler_Apply_removeFeature(t *testing.T) {
 	desired := state.EmptySpec()
 
 	reconciler.WithInitialActualState(actual)
-	reconciler.Apply(desired)
+	reconciler.Apply(context.Background(), desired)
 
 	assert.Equal(t, 1, len(provider.removeFeatCalls), "should have called #RemoveFeature()")
 	assert.Equal(t, 1, provider.actualCalls, "should have called #ActualState()")
@@ -283,7 +284,7 @@ func TestReconciler_Apply_removeFeatureWithError(t *testing.T) {
 	provider.removeFeatErr = errors.New("unable to update feature")
 
 	reconciler.WithInitialActualState(actual)
-	reconciler.Apply(desired)
+	reconciler.Apply(context.Background(), desired)
 
 	assert.Equal(t, 1, len(provider.removeFeatCalls), "should have called #RemoveFeature()")
 	assert.Equal(t, 0, provider.actualCalls, "should not have called #ActualState()")

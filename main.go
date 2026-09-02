@@ -1,7 +1,11 @@
 package main
 
 import (
+	"context"
 	"os"
+	"os/signal"
+	"sync"
+	"syscall"
 
 	"github.com/mbaitar/gco/agent/internal/config"
 	"github.com/mbaitar/gco/agent/internal/log"
@@ -21,8 +25,8 @@ func createProvider(conf *config.Config) provider.Provider {
 	return nil // should not be reached
 }
 
-func createStateController(p provider.Provider) *control.StateController {
-	ctrl, err := control.InitControl(p)
+func createStateController(ctx context.Context, p provider.Provider) *control.StateController {
+	ctrl, err := control.InitControl(ctx, p)
 	if err != nil {
 		log.Errorf("failed to initialize control: %v", err)
 		os.Exit(1)
@@ -30,7 +34,7 @@ func createStateController(p provider.Provider) *control.StateController {
 		log.Info("Successfully initialized control loop using docker provider")
 	}
 
-	go ctrl.Start()
+	go ctrl.Start(ctx)
 
 	state := control.NewStateController(ctrl)
 	return state
@@ -41,13 +45,31 @@ func main() {
 	conf := config.DefaultConfig()
 	conf.SetFlags()
 
+	// cancel the root context on SIGINT/SIGTERM for a graceful shutdown
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
 	// setup application
 	prov := createProvider(conf)
-	controller := createStateController(prov)
+	controller := createStateController(ctx, prov)
 
-	// start gRPC server
-	go service.StartGRPC(conf.Grpc, controller)
+	// start gRPC and HTTP servers
+	var wg sync.WaitGroup
+	wg.Add(2)
 
-	// start HTTP server
-	service.StartHTTP(conf.Http, controller)
+	go func() {
+		defer wg.Done()
+		service.StartGRPC(ctx, conf.Grpc, controller)
+	}()
+
+	go func() {
+		defer wg.Done()
+		service.StartHTTP(ctx, conf.Http, controller)
+	}()
+
+	// wait for a shutdown signal and let the servers drain
+	<-ctx.Done()
+	log.Info("Shutdown signal received, stopping servers")
+	wg.Wait()
+	log.Info("Agent has been stopped")
 }

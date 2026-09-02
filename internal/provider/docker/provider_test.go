@@ -1,11 +1,12 @@
 package docker
 
 import (
+	"context"
 	"errors"
+	"github.com/docker/docker/api/types/container"
 	"strings"
 	"testing"
 
-	"github.com/docker/docker/api/types"
 	"github.com/mbaitar/gco/agent/internal/files"
 	"github.com/mbaitar/gco/agent/pkg/feature"
 	"github.com/mbaitar/gco/agent/pkg/resource"
@@ -41,7 +42,7 @@ func TestProvider_CreateApplication(t *testing.T) {
 		},
 	}
 
-	err := provider.CreateApplication(app)
+	err := provider.CreateApplication(context.Background(), app)
 	assert.Nil(t, err, "should not have thrown an error")
 
 	// verify calls made
@@ -67,7 +68,7 @@ func TestProvider_CreateApplication_createError(t *testing.T) {
 		},
 	}
 
-	err := provider.CreateApplication(app)
+	err := provider.CreateApplication(context.Background(), app)
 	assert.NotNil(t, err, "should have thrown an error")
 
 	// verify calls made
@@ -93,7 +94,7 @@ func TestProvider_CreateApplication_startError(t *testing.T) {
 		},
 	}
 
-	err := provider.CreateApplication(app)
+	err := provider.CreateApplication(context.Background(), app)
 	assert.NotNil(t, err, "should have thrown an error")
 
 	// verify calls made
@@ -119,7 +120,7 @@ func TestProvider_CreateApplication_pullError(t *testing.T) {
 		},
 	}
 
-	err := provider.CreateApplication(app)
+	err := provider.CreateApplication(context.Background(), app)
 	assert.NotNil(t, err, "should have thrown an error")
 
 	// verify calls made
@@ -143,10 +144,10 @@ func TestProvider_UpdateApplication(t *testing.T) {
 		},
 	}
 
-	client.containerListReturnContainers = []types.Container{exampleDockerContainer()}
-	client.containerInspectReturn = []types.ContainerJSON{exampleDockerContainerJson()}
+	client.containerListReturnContainers = []container.Summary{exampleDockerContainer()}
+	client.containerInspectReturn = []container.InspectResponse{exampleDockerContainerJson()}
 
-	err := provider.UpdateApplication(app)
+	err := provider.UpdateApplication(context.Background(), app)
 	assert.Nil(t, err, "should not have thrown an error")
 
 	assert.Equal(t, 1, len(client.containerListArgs))
@@ -173,9 +174,9 @@ func TestProvider_UpdateApplication_noMatchingContainer(t *testing.T) {
 		},
 	}
 
-	client.containerListReturnContainers = []types.Container{}
+	client.containerListReturnContainers = []container.Summary{}
 
-	err := provider.UpdateApplication(app)
+	err := provider.UpdateApplication(context.Background(), app)
 	assert.NotNil(t, err, "should have thrown an error")
 
 	assert.Equal(t, 1, len(client.containerListArgs))
@@ -202,11 +203,11 @@ func TestProvider_UpdateApplication_removeError(t *testing.T) {
 		},
 	}
 
-	client.containerListReturnContainers = []types.Container{exampleDockerContainer()}
-	client.containerInspectReturn = []types.ContainerJSON{exampleDockerContainerJson()}
+	client.containerListReturnContainers = []container.Summary{exampleDockerContainer()}
+	client.containerInspectReturn = []container.InspectResponse{exampleDockerContainerJson()}
 	client.containerRemoveReturn = errors.New("testing error")
 
-	err := provider.UpdateApplication(app)
+	err := provider.UpdateApplication(context.Background(), app)
 	assert.NotNil(t, err, "should have thrown an error")
 
 	assert.Equal(t, 1, len(client.containerListArgs))
@@ -235,7 +236,7 @@ func TestProvider_UpdateApplication_getContainerError(t *testing.T) {
 
 	client.containerListReturnErr = errors.New("testing error")
 
-	err := provider.UpdateApplication(app)
+	err := provider.UpdateApplication(context.Background(), app)
 	assert.NotNil(t, err, "should have thrown an error")
 
 	assert.Equal(t, 1, len(client.containerListArgs))
@@ -262,10 +263,10 @@ func TestProvider_RemoveApplication(t *testing.T) {
 		},
 	}
 
-	client.containerListReturnContainers = []types.Container{exampleDockerContainer()}
-	client.containerInspectReturn = []types.ContainerJSON{exampleDockerContainerJson()}
+	client.containerListReturnContainers = []container.Summary{exampleDockerContainer()}
+	client.containerInspectReturn = []container.InspectResponse{exampleDockerContainerJson()}
 
-	err := provider.RemoveApplication(app)
+	err := provider.RemoveApplication(context.Background(), app)
 	assert.Nil(t, err, "should not have thrown an error")
 
 	assert.Equal(t, 1, len(client.containerListArgs))
@@ -287,9 +288,9 @@ func TestProvider_RemoveApplication_notFound(t *testing.T) {
 		},
 	}
 
-	client.containerListReturnContainers = []types.Container{}
+	client.containerListReturnContainers = []container.Summary{}
 
-	err := provider.RemoveApplication(app)
+	err := provider.RemoveApplication(context.Background(), app)
 	assert.NotNil(t, err, "should have thrown an error when not found")
 
 	assert.Equal(t, 1, len(client.containerListArgs))
@@ -313,7 +314,7 @@ func TestProvider_RemoveApplication_findError(t *testing.T) {
 
 	client.containerListReturnErr = errors.New("test error")
 
-	err := provider.RemoveApplication(app)
+	err := provider.RemoveApplication(context.Background(), app)
 	assert.NotNil(t, err, "should have thrown an error")
 
 	assert.Equal(t, 1, len(client.containerListArgs))
@@ -335,12 +336,12 @@ func TestProvider_RemoveApplication_removeError(t *testing.T) {
 		},
 	}
 
-	client.containerListReturnContainers = []types.Container{exampleDockerContainer()}
-	client.containerInspectReturn = []types.ContainerJSON{exampleDockerContainerJson()}
+	client.containerListReturnContainers = []container.Summary{exampleDockerContainer()}
+	client.containerInspectReturn = []container.InspectResponse{exampleDockerContainerJson()}
 
 	client.containerRemoveReturn = errors.New("test error")
 
-	err := provider.RemoveApplication(app)
+	err := provider.RemoveApplication(context.Background(), app)
 	assert.NotNil(t, err, "should have thrown an error")
 
 	assert.Equal(t, 1, len(client.containerListArgs))
@@ -351,7 +352,7 @@ func TestProvider_ActualState(t *testing.T) {
 	client := NewTestClient()
 	provider := &Provider{client: client}
 
-	spec, err := provider.ActualState()
+	spec, err := provider.ActualState(context.Background())
 	assert.Nil(t, err, "should not have thrown")
 	assert.NotNil(t, spec, "should have returned a state spec")
 
@@ -360,7 +361,7 @@ func TestProvider_ActualState(t *testing.T) {
 	// first call for applications
 	appCallArgs := client.containerListArgs[0]
 	if assert.NotNil(t, appCallArgs) {
-		opts := appCallArgs[1].(types.ContainerListOptions)
+		opts := appCallArgs[1].(container.ListOptions)
 		assert.True(t, opts.All, "should have used the All flag")
 		labels := opts.Filters.Get("label")
 		ShouldIncludeLabel(t, "gco.io/kind=app", labels)
@@ -370,7 +371,7 @@ func TestProvider_ActualState(t *testing.T) {
 	// second call for features
 	featCallArgs := client.containerListArgs[1]
 	if assert.NotNil(t, featCallArgs) {
-		opts := featCallArgs[1].(types.ContainerListOptions)
+		opts := featCallArgs[1].(container.ListOptions)
 		assert.True(t, opts.All, "should have used the All flag")
 		labels := opts.Filters.Get("label")
 		ShouldIncludeLabel(t, "gco.io/kind=feature", labels)
@@ -385,7 +386,7 @@ func TestProvider_ActualState_listError(t *testing.T) {
 
 	client.containerListReturnErr = errors.New("test error")
 
-	spec, err := provider.ActualState()
+	spec, err := provider.ActualState(context.Background())
 	assert.NotNil(t, err, "should have thrown")
 	assert.Nil(t, spec, "should not have returned a state spec")
 
@@ -401,7 +402,7 @@ func TestProvider_CreateFeature(t *testing.T) {
 		LogLevel: "info",
 	}
 
-	err := provider.CreateFeature(fluentBit)
+	err := provider.CreateFeature(context.Background(), fluentBit)
 	assert.Nil(t, err, "should not have thrown an error")
 
 	// verify calls made
@@ -420,7 +421,7 @@ func TestProvider_CreateFeature_createError(t *testing.T) {
 	}
 
 	client.containerCreateReturnErr = errors.New("test error")
-	err := provider.CreateFeature(fluentBit)
+	err := provider.CreateFeature(context.Background(), fluentBit)
 	assert.NotNil(t, err, "should have thrown an error upon creation")
 
 	// verify calls made
@@ -439,7 +440,7 @@ func TestProvider_CreateFeature_startError(t *testing.T) {
 	}
 
 	client.containerStartReturn = errors.New("test error")
-	err := provider.CreateFeature(fluentBit)
+	err := provider.CreateFeature(context.Background(), fluentBit)
 	assert.NotNil(t, err, "should have thrown an error upon starting the container")
 
 	// verify calls made
@@ -458,7 +459,7 @@ func TestProvider_CreateFeature_pullError(t *testing.T) {
 	}
 
 	client.imagePullReturnErr = errors.New("test error")
-	err := provider.CreateFeature(fluentBit)
+	err := provider.CreateFeature(context.Background(), fluentBit)
 	assert.NotNil(t, err, "should have thrown an error when failing to pull image")
 
 	// verify calls made
@@ -474,7 +475,7 @@ func TestProvider_CreateFeature_unsupported(t *testing.T) {
 
 	unsupported := &UnsupportedFeature{}
 
-	err := provider.CreateFeature(unsupported)
+	err := provider.CreateFeature(context.Background(), unsupported)
 	assert.NotNil(t, err, "should have thrown an error")
 
 	// verify calls made
@@ -492,10 +493,10 @@ func TestProvider_UpdateFeature(t *testing.T) {
 		LogLevel: "info",
 	}
 
-	client.containerListReturnContainers = []types.Container{exampleDockerContainer()}
-	client.containerInspectReturn = []types.ContainerJSON{exampleDockerContainerJson()}
+	client.containerListReturnContainers = []container.Summary{exampleDockerContainer()}
+	client.containerInspectReturn = []container.InspectResponse{exampleDockerContainerJson()}
 
-	err := provider.UpdateFeature(fluentBit)
+	err := provider.UpdateFeature(context.Background(), fluentBit)
 	assert.Nil(t, err, "should not have thrown an error")
 
 	assert.Equal(t, 1, len(client.containerListArgs))
@@ -507,7 +508,7 @@ func TestProvider_UpdateFeature(t *testing.T) {
 	assert.Equal(t, 1, len(client.containerStartArgs))
 
 	// verify container list args used correct labels
-	opts := client.containerListArgs[0][1].(types.ContainerListOptions)
+	opts := client.containerListArgs[0][1].(container.ListOptions)
 	if assert.NotNil(t, opts, "should have used container list options") {
 		labels := opts.Filters.Get("label")
 		ShouldIncludeLabel(t, "gco.io/feature=fluent-bit", labels)
@@ -523,9 +524,9 @@ func TestProvider_UpdateFeature_noMatchingContainer(t *testing.T) {
 		LogLevel: "info",
 	}
 
-	client.containerListReturnContainers = []types.Container{}
+	client.containerListReturnContainers = []container.Summary{}
 
-	err := provider.UpdateFeature(fluentBit)
+	err := provider.UpdateFeature(context.Background(), fluentBit)
 	assert.NotNil(t, err, "should have thrown an error when not finding a matching container")
 
 	assert.Equal(t, 1, len(client.containerListArgs))
@@ -546,11 +547,11 @@ func TestProvider_UpdateFeature_removeError(t *testing.T) {
 		LogLevel: "info",
 	}
 
-	client.containerListReturnContainers = []types.Container{exampleDockerContainer()}
-	client.containerInspectReturn = []types.ContainerJSON{exampleDockerContainerJson()}
+	client.containerListReturnContainers = []container.Summary{exampleDockerContainer()}
+	client.containerInspectReturn = []container.InspectResponse{exampleDockerContainerJson()}
 	client.containerRemoveReturn = errors.New("testing error")
 
-	err := provider.UpdateFeature(fluentBit)
+	err := provider.UpdateFeature(context.Background(), fluentBit)
 	assert.NotNil(t, err, "should have thrown an error upon failing to remove")
 
 	assert.Equal(t, 1, len(client.containerListArgs))
@@ -573,7 +574,7 @@ func TestProvider_UpdateFeature_getFeatureError(t *testing.T) {
 
 	client.containerListReturnErr = errors.New("testing error")
 
-	err := provider.UpdateFeature(fluentBit)
+	err := provider.UpdateFeature(context.Background(), fluentBit)
 	assert.NotNil(t, err, "should have thrown an error when unable to get feature")
 
 	assert.Equal(t, 1, len(client.containerListArgs))
@@ -594,10 +595,10 @@ func TestProvider_RemoveFeature(t *testing.T) {
 		LogLevel: "info",
 	}
 
-	client.containerListReturnContainers = []types.Container{exampleDockerContainer()}
-	client.containerInspectReturn = []types.ContainerJSON{exampleDockerContainerJson()}
+	client.containerListReturnContainers = []container.Summary{exampleDockerContainer()}
+	client.containerInspectReturn = []container.InspectResponse{exampleDockerContainerJson()}
 
-	err := provider.RemoveFeature(fluentBit)
+	err := provider.RemoveFeature(context.Background(), fluentBit)
 	assert.Nil(t, err, "should not have thrown an error")
 
 	assert.Equal(t, 1, len(client.containerListArgs))
@@ -613,9 +614,9 @@ func TestProvider_RemoveFeature_notFound(t *testing.T) {
 		LogLevel: "info",
 	}
 
-	client.containerListReturnContainers = []types.Container{}
+	client.containerListReturnContainers = []container.Summary{}
 
-	err := provider.RemoveFeature(fluentBit)
+	err := provider.RemoveFeature(context.Background(), fluentBit)
 	assert.NotNil(t, err, "should have thrown an error when not found")
 
 	assert.Equal(t, 1, len(client.containerListArgs))
@@ -633,7 +634,7 @@ func TestProvider_RemoveFeature_findError(t *testing.T) {
 
 	client.containerListReturnErr = errors.New("test error")
 
-	err := provider.RemoveFeature(fluentBit)
+	err := provider.RemoveFeature(context.Background(), fluentBit)
 	assert.NotNil(t, err, "should have thrown an error when list command fails")
 
 	assert.Equal(t, 1, len(client.containerListArgs))
@@ -649,11 +650,11 @@ func TestProvider_removeFeature_removeError(t *testing.T) {
 		LogLevel: "info",
 	}
 
-	client.containerListReturnContainers = []types.Container{exampleDockerContainer()}
-	client.containerInspectReturn = []types.ContainerJSON{exampleDockerContainerJson()}
+	client.containerListReturnContainers = []container.Summary{exampleDockerContainer()}
+	client.containerInspectReturn = []container.InspectResponse{exampleDockerContainerJson()}
 	client.containerRemoveReturn = errors.New("test error")
 
-	err := provider.RemoveFeature(fluentBit)
+	err := provider.RemoveFeature(context.Background(), fluentBit)
 	assert.NotNil(t, err, "should have thrown an error when failing to remove")
 
 	assert.Equal(t, 1, len(client.containerListArgs))

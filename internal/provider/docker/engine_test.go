@@ -5,7 +5,6 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/go-connections/nat"
 	"github.com/mbaitar/gco/agent/pkg/resource"
@@ -18,7 +17,7 @@ func TestProvider_startContainer(t *testing.T) {
 		client: client,
 	}
 
-	err := provider.startContainer("container_id")
+	err := provider.startContainer(context.Background(), "container_id")
 	assert.Nil(t, err, "should not have returned an error")
 
 	// verify arguments
@@ -26,7 +25,7 @@ func TestProvider_startContainer(t *testing.T) {
 		args := client.containerStartArgs[0]
 		ctx := args[0].(context.Context)
 		containerId := args[1].(string)
-		opts := args[2].(types.ContainerStartOptions)
+		opts := args[2].(container.StartOptions)
 
 		assert.NotNilf(t, ctx, "should have included a context")
 		assert.Equal(t, "container_id", containerId)
@@ -41,7 +40,7 @@ func TestProvider_startContainer_clientError(t *testing.T) {
 	}
 
 	client.containerStartReturn = errors.New("test error")
-	err := provider.startContainer("container_id")
+	err := provider.startContainer(context.Background(), "container_id")
 	assert.NotNilf(t, err, "should have returned an error")
 
 	// verify arguments
@@ -49,7 +48,7 @@ func TestProvider_startContainer_clientError(t *testing.T) {
 		args := client.containerStartArgs[0]
 		ctx := args[0].(context.Context)
 		containerId := args[1].(string)
-		opts := args[2].(types.ContainerStartOptions)
+		opts := args[2].(container.StartOptions)
 
 		assert.NotNilf(t, ctx, "should have included a context")
 		assert.Equal(t, "container_id", containerId)
@@ -72,7 +71,7 @@ func TestProvider_createContainer(t *testing.T) {
 	}
 
 	client.containerCreateReturnId = "container_id"
-	id, err := provider.createContainer(con)
+	id, err := provider.createContainer(context.Background(), con)
 	assert.Nil(t, err, "should not have thrown an error")
 	assert.Equal(t, "container_id", id)
 
@@ -127,7 +126,7 @@ func TestProvider_createContainer_clientError(t *testing.T) {
 
 	client.containerCreateReturnId = ""
 	client.containerCreateReturnErr = errors.New("test error")
-	id, err := provider.createContainer(con)
+	id, err := provider.createContainer(context.Background(), con)
 	assert.NotNil(t, err, "should have thrown an error")
 	assert.Equal(t, "", id)
 }
@@ -136,14 +135,14 @@ func TestProvider_removeContainer(t *testing.T) {
 	client := NewTestClient()
 	provider := &Provider{client: client}
 
-	err := provider.removeContainer("container_id")
+	err := provider.removeContainer(context.Background(), "container_id")
 	assert.Nil(t, err, "should not have thrown an error")
 
 	if assert.Equal(t, 1, len(client.containerRemoveArgs), "should have called client.ContainerRemove()") {
 		args := client.containerRemoveArgs[0]
 		ctx := args[0].(context.Context)
 		containerId := args[1].(string)
-		opts := args[2].(types.ContainerRemoveOptions)
+		opts := args[2].(container.RemoveOptions)
 
 		assert.NotNil(t, ctx, "should have included context")
 		assert.Equal(t, "container_id", containerId)
@@ -157,7 +156,7 @@ func TestProvider_removeContainer_clientError(t *testing.T) {
 	provider := &Provider{client: client}
 
 	client.containerRemoveReturn = errors.New("test error")
-	err := provider.removeContainer("container_id")
+	err := provider.removeContainer(context.Background(), "container_id")
 	assert.NotNil(t, err, "should have thrown an error")
 }
 
@@ -165,9 +164,9 @@ func TestProvider_getFilteredContainers(t *testing.T) {
 	client := NewTestClient()
 	provider := &Provider{client: client}
 
-	client.containerListReturnContainers = []types.Container{exampleDockerContainer()}
-	client.containerInspectReturn = []types.ContainerJSON{exampleDockerContainerJson()}
-	containers, err := provider.getFilteredContainers(&types.ContainerListOptions{})
+	client.containerListReturnContainers = []container.Summary{exampleDockerContainer()}
+	client.containerInspectReturn = []container.InspectResponse{exampleDockerContainerJson()}
+	containers, err := provider.getFilteredContainers(context.Background(), &container.ListOptions{})
 	assert.Nil(t, err, "should not have thrown an error")
 	assert.NotNil(t, containers, "should not have returned a nil list")
 	assert.Equal(t, 1, len(containers), "should have returned 1 container")
@@ -176,7 +175,7 @@ func TestProvider_getFilteredContainers(t *testing.T) {
 	if assert.Equal(t, 1, len(client.containerListArgs), "should have called client.ContainerList()") {
 		args := client.containerListArgs[0]
 		ctx := args[0].(context.Context)
-		opts := args[1].(types.ContainerListOptions)
+		opts := args[1].(container.ListOptions)
 
 		assert.NotNil(t, ctx, "should have included context")
 		if assert.NotNil(t, opts, "should have included list options") {
@@ -197,7 +196,7 @@ func TestProvider_getFilteredContainers_clientError(t *testing.T) {
 	provider := &Provider{client: client}
 
 	client.containerListReturnErr = errors.New("test error")
-	containers, err := provider.getFilteredContainers(&types.ContainerListOptions{})
+	containers, err := provider.getFilteredContainers(context.Background(), &container.ListOptions{})
 	assert.NotNil(t, err, "should have thrown an error")
 	assert.Nil(t, containers, "should have returned a nil list")
 }
@@ -208,17 +207,17 @@ func TestProvider_getContainerByName(t *testing.T) {
 
 	dc := exampleDockerContainer()
 
-	client.containerListReturnContainers = []types.Container{dc}
-	client.containerInspectReturn = []types.ContainerJSON{exampleDockerContainerJson()}
+	client.containerListReturnContainers = []container.Summary{dc}
+	client.containerInspectReturn = []container.InspectResponse{exampleDockerContainerJson()}
 
-	c, err := provider.getContainerByName(dc.Names[0])
+	c, err := provider.getContainerByName(context.Background(), dc.Names[0])
 	assert.Nil(t, err, "should not have thrown an error")
 	assert.NotNil(t, c, "should have returned a container")
 
 	// verify args
 	if assert.Equal(t, 1, len(client.containerListArgs), "should have called client.ContainerList()") {
 		args := client.containerListArgs[0]
-		opts := args[1].(types.ContainerListOptions)
+		opts := args[1].(container.ListOptions)
 
 		assert.True(t, opts.All, "should have enabled all flag")
 
@@ -244,7 +243,7 @@ func TestProvider_getContainerByName_noMatch(t *testing.T) {
 	client := NewTestClient()
 	provider := &Provider{client: client}
 
-	c, err := provider.getContainerByName("no matches")
+	c, err := provider.getContainerByName(context.Background(), "no matches")
 	assert.Nil(t, err, "should not have thrown an error")
 	assert.Nil(t, c, "should not have returned a container")
 }
@@ -253,14 +252,14 @@ func TestProvider_verifyImage_always(t *testing.T) {
 	client := NewTestClient()
 	provider := &Provider{client: client}
 
-	err := provider.verifyImage("postgres:latest", alwaysPullPolicy)
+	err := provider.verifyImage(context.Background(), "postgres:latest", alwaysPullPolicy)
 	assert.Nil(t, err, "should not have thrown an error")
 
 	if assert.Equal(t, 1, len(client.imagePullArgs), "should have called client.ImagePull()") {
 		args := client.imagePullArgs[0]
 		ctx := args[0].(context.Context)
 		ref := args[1].(string)
-		//options := args[2].(types.ImagePullOptions)
+		//options := args[2].(image.PullOptions)
 
 		assert.NotNil(t, ctx, "should have included context")
 		assert.Equal(t, "postgres:latest", ref)
@@ -271,14 +270,14 @@ func TestProvider_getApplicationContainers(t *testing.T) {
 	client := NewTestClient()
 	provider := &Provider{client: client}
 
-	containers, err := provider.getApplicationContainers()
+	containers, err := provider.getApplicationContainers(context.Background())
 	assert.Nil(t, err, "should not have thrown an error")
 	assert.NotNil(t, containers, "should have returned an array")
 
 	if assert.Equal(t, 1, len(client.containerListArgs), "should have called client.ContainerList()") {
 		args := client.containerListArgs[0]
 		ctx := args[0].(context.Context)
-		opts := args[1].(types.ContainerListOptions)
+		opts := args[1].(container.ListOptions)
 
 		assert.NotNil(t, ctx, "should have included a context")
 		assert.True(t, opts.All, "should list all the containers")

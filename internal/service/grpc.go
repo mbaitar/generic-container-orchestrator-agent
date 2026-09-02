@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"net"
 	"os"
 
@@ -14,7 +15,8 @@ import (
 )
 
 // StartGRPC registers the known services and starts listening using the configured address.
-func StartGRPC(conf config.Grpc, controller *control.StateController) {
+// The server is gracefully stopped when the given context is cancelled.
+func StartGRPC(ctx context.Context, conf config.Grpc, controller *control.StateController) {
 	if !conf.Enabled {
 		log.Debug("gRPC server has not been enabled")
 		return
@@ -36,6 +38,13 @@ func StartGRPC(conf config.Grpc, controller *control.StateController) {
 		reflection.Register(server)
 	}
 
+	// stop the server gracefully when the context is cancelled
+	go func() {
+		<-ctx.Done()
+		log.Debug("Gracefully stopping gRPC server")
+		server.GracefulStop()
+	}()
+
 	// start listening for gRPC connections
 	log.Infof("Started listening for gRPC connections on '%s'", conf.GetNetworkAddress())
 	err = server.Serve(lis)
@@ -43,4 +52,6 @@ func StartGRPC(conf config.Grpc, controller *control.StateController) {
 		log.Errorf("failed to serve gRPC: %v", err)
 		os.Exit(1)
 	}
+
+	log.Info("gRPC server has been stopped")
 }

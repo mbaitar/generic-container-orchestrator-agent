@@ -51,17 +51,21 @@ func (w *Watcher) Init() error {
 
 func (w *Watcher) Watch() {
 	defer w.watcher.Close()
+	w.watch(w.watcher.Events, w.watcher.Errors)
+}
 
+// watch consumes the given event and error channels until one of them is closed.
+func (w *Watcher) watch(events <-chan fsnotify.Event, errors <-chan error) {
 	for {
 		select {
-		case err, ok := <-w.watcher.Errors:
+		case err, ok := <-errors:
 			if !ok {
 				log.Debug("Error channel has been closed")
 				return
 			}
 
 			log.Warnf("Error occurred while watching file: %v", err)
-		case event, ok := <-w.watcher.Events:
+		case event, ok := <-events:
 			if !ok {
 				log.Debug("Event channel has been closed")
 				return

@@ -1,6 +1,8 @@
 package docker
 
 import (
+	"context"
+
 	docker "github.com/docker/docker/client"
 	"github.com/mbaitar/gco/agent/internal/config"
 	"github.com/mbaitar/gco/agent/internal/provider"
@@ -12,7 +14,7 @@ import (
 // Provider defines a docker provider which can communicate with the local docker socket.
 type Provider struct {
 	// client represents the Docker SDK client
-	client docker.CommonAPIClient
+	client docker.APIClient
 	// addComposeLabel adds the docker compose project label.
 	addComposeLabel bool
 }
@@ -30,17 +32,17 @@ func (p *Provider) WithConfig(conf config.DockerProvider) *Provider {
 	return p
 }
 
-func (p *Provider) CreateApplication(app *resource.Application) error {
+func (p *Provider) CreateApplication(ctx context.Context, app *resource.Application) error {
 	container := fromApplicationResource(app)
 
 	// TODO: retrieve configuration hash for this resource?
 
-	id, err := p.createContainer(container)
+	id, err := p.createContainer(ctx, container)
 	if err != nil {
 		return err
 	}
 
-	err = p.startContainer(id)
+	err = p.startContainer(ctx, id)
 	if err != nil {
 		return err
 	}
@@ -48,16 +50,16 @@ func (p *Provider) CreateApplication(app *resource.Application) error {
 	return nil
 }
 
-func (p *Provider) UpdateApplication(app *resource.Application) error {
-	if err := p.RemoveApplication(app); err != nil {
+func (p *Provider) UpdateApplication(ctx context.Context, app *resource.Application) error {
+	if err := p.RemoveApplication(ctx, app); err != nil {
 		return err
 	}
 
-	return p.CreateApplication(app)
+	return p.CreateApplication(ctx, app)
 }
 
-func (p *Provider) RemoveApplication(app *resource.Application) error {
-	container, err := p.getContainerByName(app.Name)
+func (p *Provider) RemoveApplication(ctx context.Context, app *resource.Application) error {
+	container, err := p.getContainerByName(ctx, app.Name)
 	if err != nil {
 		return err
 	}
@@ -65,11 +67,11 @@ func (p *Provider) RemoveApplication(app *resource.Application) error {
 	if container == nil {
 		return provider.ErrAppNotFound
 	} else {
-		return p.removeContainer(container.id)
+		return p.removeContainer(ctx, container.id)
 	}
 }
 
-func (p *Provider) CreateFeature(feat feature.Feature) error {
+func (p *Provider) CreateFeature(ctx context.Context, feat feature.Feature) error {
 
 	var container *internalContainer
 
@@ -87,12 +89,12 @@ func (p *Provider) CreateFeature(feat feature.Feature) error {
 		return provider.ErrFeatureNotSupported
 	}
 
-	id, err := p.createContainer(container)
+	id, err := p.createContainer(ctx, container)
 	if err != nil {
 		return err
 	}
 
-	err = p.startContainer(id)
+	err = p.startContainer(ctx, id)
 	if err != nil {
 		return err
 	}
@@ -100,16 +102,16 @@ func (p *Provider) CreateFeature(feat feature.Feature) error {
 	return nil
 }
 
-func (p *Provider) UpdateFeature(feat feature.Feature) error {
-	if err := p.RemoveFeature(feat); err != nil {
+func (p *Provider) UpdateFeature(ctx context.Context, feat feature.Feature) error {
+	if err := p.RemoveFeature(ctx, feat); err != nil {
 		return err
 	}
 
-	return p.CreateFeature(feat)
+	return p.CreateFeature(ctx, feat)
 }
 
-func (p *Provider) RemoveFeature(feat feature.Feature) error {
-	container, err := p.getFeatureByName(feat.Name())
+func (p *Provider) RemoveFeature(ctx context.Context, feat feature.Feature) error {
+	container, err := p.getFeatureByName(ctx, feat.Name())
 	if err != nil {
 		return err
 	}
@@ -118,7 +120,7 @@ func (p *Provider) RemoveFeature(feat feature.Feature) error {
 		return provider.ErrFeatureNotFound
 	}
 
-	err = p.removeContainer(container.id)
+	err = p.removeContainer(ctx, container.id)
 	if err != nil {
 		return err
 	}
@@ -128,10 +130,10 @@ func (p *Provider) RemoveFeature(feat feature.Feature) error {
 	return nil
 }
 
-func (p *Provider) ActualState() (*state.Spec, error) {
+func (p *Provider) ActualState(ctx context.Context) (*state.Spec, error) {
 
 	// extract applications
-	appContainers, err := p.getApplicationContainers()
+	appContainers, err := p.getApplicationContainers(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -143,7 +145,7 @@ func (p *Provider) ActualState() (*state.Spec, error) {
 	}
 
 	// extract features
-	featContainers, err := p.getFeatureContainers()
+	featContainers, err := p.getFeatureContainers(ctx)
 	if err != nil {
 		return nil, err
 	}

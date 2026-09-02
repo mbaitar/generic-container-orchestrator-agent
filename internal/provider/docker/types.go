@@ -5,7 +5,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/go-connections/nat"
 	"github.com/mbaitar/gco/agent/pkg/resource"
@@ -89,7 +88,7 @@ type internalContainer struct {
 	pullPolicy imagePullPolicy
 }
 
-func fromDockerContainer(c types.ContainerJSON) internalContainer {
+func fromDockerContainer(c container.InspectResponse) internalContainer {
 	ic := &internalContainer{
 		id:      c.ID,
 		name:    c.Name,

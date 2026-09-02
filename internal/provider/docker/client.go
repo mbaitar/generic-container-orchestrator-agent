@@ -8,13 +8,7 @@ import (
 )
 
 func newDockerClient() docker.APIClient {
-	//client, err := docker.NewClientWithOpts(docker.FromEnv, docker.WithAPIVersionNegotiation())
-	//if err != nil {
-	//	log.Errorf("Unable to create new docker client: %v", err)
-	//	os.Exit(1)
-	//}
-
-	cli, err := docker.NewClientWithOpts(docker.FromEnv)
+	cli, err := docker.NewClientWithOpts(docker.FromEnv, docker.WithAPIVersionNegotiation())
 	if err != nil {
 		log.Errorf("Unable to create new docker client: %v", err)
 		os.Exit(1)

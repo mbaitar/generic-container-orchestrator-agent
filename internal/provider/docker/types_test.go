@@ -4,33 +4,32 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/go-connections/nat"
 	"github.com/mbaitar/gco/agent/pkg/resource"
 	"github.com/stretchr/testify/assert"
 )
 
-func exampleDockerContainer() types.Container {
-	return types.Container{
+func exampleDockerContainer() container.Summary {
+	return container.Summary{
 		ID:     "container_id",
 		Names:  []string{"container_name"},
 		Image:  "nginx:latest",
 		Labels: map[string]string{"key": "value"},
 		State:  "running",
-		Ports: []types.Port{
+		Ports: []container.Port{
 			{Type: "tcp", PrivatePort: 8080, PublicPort: 80},
 			{Type: "tcp", PrivatePort: 9000, PublicPort: 9000},
 		},
 	}
 }
 
-func exampleDockerContainerJson() types.ContainerJSON {
-	c := types.ContainerJSON{}
-	c.ContainerJSONBase = &types.ContainerJSONBase{
+func exampleDockerContainerJson() container.InspectResponse {
+	c := container.InspectResponse{}
+	c.ContainerJSONBase = &container.ContainerJSONBase{
 		ID:   "container_id",
 		Name: "container_name",
-		State: &types.ContainerState{
+		State: &container.State{
 			Status: "running",
 		},
 	}

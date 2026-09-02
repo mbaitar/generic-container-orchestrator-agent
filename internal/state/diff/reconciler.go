@@ -1,6 +1,8 @@
 package diff
 
 import (
+	"context"
+
 	"github.com/mbaitar/gco/agent/internal/log"
 	"github.com/mbaitar/gco/agent/internal/provider"
 	"github.com/mbaitar/gco/agent/internal/state"
@@ -32,23 +34,23 @@ func (r *Reconciler) WithInitialActualState(actual *state.Spec) *Reconciler {
 	return r
 }
 
-func (r *Reconciler) Apply(desired *state.Spec) {
+func (r *Reconciler) Apply(ctx context.Context, desired *state.Spec) {
 	r.desired = desired
-	r.update(true)
+	r.update(ctx, true)
 }
 
-func (r *Reconciler) Observe(actual *state.Spec) {
+func (r *Reconciler) Observe(ctx context.Context, actual *state.Spec) {
 	r.actual = actual
-	r.update(false)
+	r.update(ctx, false)
 }
 
-func (r *Reconciler) update(triggerFetch bool) {
+func (r *Reconciler) update(ctx context.Context, triggerFetch bool) {
 	modified := false
 	result := compare(r.desired, r.actual)
 
 	// adding features (before applications), supporting infrastructure -> some applications might rely on it
 	for _, feat := range result.features.added {
-		err := r.provider.CreateFeature(feat)
+		err := r.provider.CreateFeature(ctx, feat)
 		if err != nil {
 			log.Errorf("Error while creating feature=%s: %v", feat.Name(), err)
 		} else {
@@ -59,7 +61,7 @@ func (r *Reconciler) update(triggerFetch bool) {
 
 	// updating features (before applications)
 	for _, feat := range result.features.changed {
-		err := r.provider.UpdateFeature(feat)
+		err := r.provider.UpdateFeature(ctx, feat)
 		if err != nil {
 			log.Errorf("Error while creating feature=%s: %v", feat.Name(), err)
 		} else {
@@ -70,7 +72,7 @@ func (r *Reconciler) update(triggerFetch bool) {
 
 	// remove applications -> first
 	for _, app := range result.apps.removed {
-		err := r.provider.RemoveApplication(&app)
+		err := r.provider.RemoveApplication(ctx, &app)
 		if err != nil {
 			log.Errorf("Error while removing application=%s: %v", app.Name, err)
 		} else {
@@ -81,7 +83,7 @@ func (r *Reconciler) update(triggerFetch bool) {
 
 	// update applications -> second
 	for _, app := range result.apps.changed {
-		err := r.provider.UpdateApplication(&app)
+		err := r.provider.UpdateApplication(ctx, &app)
 		if err != nil {
 			log.Errorf("Error while updating application=%s: %v", app.Name, err)
 		} else {
@@ -92,7 +94,7 @@ func (r *Reconciler) update(triggerFetch bool) {
 
 	// create new applications -> last
 	for _, app := range result.apps.added {
-		err := r.provider.CreateApplication(&app)
+		err := r.provider.CreateApplication(ctx, &app)
 		if err != nil {
 			log.Errorf("Error while creating application=%s: %v", app.Name, err)
 		} else {
@@ -103,7 +105,7 @@ func (r *Reconciler) update(triggerFetch bool) {
 
 	// remove features (after applications)
 	for _, feat := range result.features.removed {
-		err := r.provider.RemoveFeature(feat)
+		err := r.provider.RemoveFeature(ctx, feat)
 		if err != nil {
 			log.Errorf("Error while removing feature=%s: %v", feat.Name(), err)
 		} else {
@@ -114,7 +116,7 @@ func (r *Reconciler) update(triggerFetch bool) {
 
 	if modified && triggerFetch {
 		log.Debug("Changes detected to external system, pulling latest actual state")
-		actual, err := r.provider.ActualState()
+		actual, err := r.provider.ActualState(ctx)
 		if err != nil {
 			log.Errorf("Unable to get actual state from external system: %v", err)
 		} else {

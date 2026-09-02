@@ -4,7 +4,16 @@ Agent is part of the Generic Container Orchestration project.
 It is the most crucial part of the project as it is responsible for managing the state
 of the external container systems.
 
+The agent keeps the desired state and the actual state in sync in both directions:
+
+- Changes applied through the gRPC/HTTP API are reconciled towards the container provider.
+- The agent subscribes to the provider's event stream (e.g. the docker events API) and
+  periodically resyncs, so containers that crash or are removed outside of the agent are
+  automatically restored to the desired state (self-healing).
+
 ## Usage
+
+Requires Go 1.25+ and a running docker daemon.
 
 If you are using docker desktop, make sure you have allowed the default docker socket to be used option under the advanced tab in the settings.
 

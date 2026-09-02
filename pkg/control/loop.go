@@ -3,6 +3,7 @@ package control
 import (
 	"context"
 	"os"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/mbaitar/gco/agent/internal/log"
@@ -11,6 +12,16 @@ import (
 	"github.com/mbaitar/gco/agent/internal/state/diff"
 
 	"golang.org/x/sync/semaphore"
+)
+
+const (
+	// resyncInterval is the fallback interval at which the actual state is re-fetched
+	// from the provider, in case an external change was missed by the watcher.
+	resyncInterval = 30 * time.Second
+
+	// debounceDelay is how long the control loop waits after the last provider event
+	// before fetching the actual state, so bursts of events result in a single resync.
+	debounceDelay = 2 * time.Second
 )
 
 // StateUpdateHandler defines a function which will be called when a state update has been
@@ -29,12 +40,17 @@ type Control struct {
 
 	sem      *semaphore.Weighted
 	handlers map[string]StateUpdateHandler
+
+	// resyncInterval and debounceDelay control the watch behaviour and are
+	// overridable for testing purposes.
+	resyncInterval time.Duration
+	debounceDelay  time.Duration
 }
 
 // InitControl will initialize the control structure used for keeping the system in the correct state.
-func InitControl(p provider.Provider) (*Control, error) {
+func InitControl(ctx context.Context, p provider.Provider) (*Control, error) {
 	// fetch first actual state
-	actual, err := p.ActualState()
+	actual, err := p.ActualState(ctx)
 	if err != nil {
 		log.Warn("Unable to retrieve initial actual state from external provider")
 		return nil, err
@@ -52,26 +68,96 @@ func InitControl(p provider.Provider) (*Control, error) {
 
 		sem:      semaphore.NewWeighted(1),
 		handlers: make(map[string]StateUpdateHandler),
+
+		resyncInterval: resyncInterval,
+		debounceDelay:  debounceDelay,
 	}, nil
 }
 
 // Start defines a function which will start the control loop for keeping the system in the correct state.
-// This method will block until the 'exit' signal has been received.
-func (c *Control) Start() {
+// This method will block until the context is cancelled or the 'exit' signal has been received.
+func (c *Control) Start(ctx context.Context) {
 	log.Info("Resource control loop has been started")
+
+	// watch the provider for external changes and periodically resync
+	go c.watchProvider(ctx)
 
 	for {
 		select {
 		case desired := <-c.apply:
 			log.Infof("Received signal from 'apply' channel (applications=%d)", len(desired.Applications))
-			c.reconciler.Apply(&desired)
+			c.reconciler.Apply(ctx, &desired)
 		case actual := <-c.observe:
 			log.Infof("Received signal from 'observe' channel (applications=%d)", len(actual.Applications))
-			c.reconciler.Observe(&actual)
+			c.reconciler.Observe(ctx, &actual)
+		case <-ctx.Done():
+			log.Debug("Control loop context has been cancelled")
+			return
 		case <-c.exit:
 			log.Debug("Received signal from 'exit' channel")
 			return
 		}
+	}
+}
+
+// watchProvider listens for change events from the provider (when supported) and
+// periodically triggers a resync so the actual state never drifts unnoticed.
+func (c *Control) watchProvider(ctx context.Context) {
+	var events <-chan struct{}
+	if watcher, ok := c.provider.(provider.Watcher); ok {
+		ch, err := watcher.Watch(ctx)
+		if err != nil {
+			log.Warnf("Unable to watch provider for external changes: %v", err)
+		} else {
+			log.Info("Watching provider for external state changes")
+			events = ch
+		}
+	}
+
+	ticker := time.NewTicker(c.resyncInterval)
+	defer ticker.Stop()
+
+	// debounce timer starts inactive
+	debounce := time.NewTimer(c.debounceDelay)
+	if !debounce.Stop() {
+		<-debounce.C
+	}
+	defer debounce.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-c.exit:
+			return
+		case _, ok := <-events:
+			if !ok {
+				// watcher stopped, fall back to periodic resync only
+				log.Warn("Provider watcher has stopped, falling back to periodic resync")
+				events = nil
+				continue
+			}
+			debounce.Reset(c.debounceDelay)
+		case <-debounce.C:
+			c.resync(ctx)
+		case <-ticker.C:
+			c.resync(ctx)
+		}
+	}
+}
+
+// resync fetches the actual state from the provider and feeds it to the observe channel.
+func (c *Control) resync(ctx context.Context) {
+	actual, err := c.provider.ActualState(ctx)
+	if err != nil {
+		log.Warnf("Unable to fetch actual state during resync: %v", err)
+		return
+	}
+
+	select {
+	case c.observe <- *actual:
+	case <-ctx.Done():
+	case <-c.exit:
 	}
 }
 

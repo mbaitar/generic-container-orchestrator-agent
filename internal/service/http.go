@@ -9,6 +9,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"time"
 
 	applicationv1 "github.com/mbaitar/gco/agent/gen/proto/application/v1"
 	"github.com/mbaitar/gco/agent/internal/config"
@@ -25,7 +26,9 @@ type httpServer struct {
 	controller *control.StateController
 }
 
-func StartHTTP(conf config.Http, controller *control.StateController) {
+// StartHTTP registers the known routes and starts listening using the configured address.
+// The server is gracefully shut down when the given context is cancelled.
+func StartHTTP(ctx context.Context, conf config.Http, controller *control.StateController) {
 	if !conf.Enabled {
 		log.Debug("HTTP server has not been enabled")
 		return
@@ -49,9 +52,24 @@ func StartHTTP(conf config.Http, controller *control.StateController) {
 	router.HandleFunc("/api/v1/applications.update", serviceWrapper(&applicationv1.UpdateApplicationRequest{}, appServer.UpdateApplication)).Methods(http.MethodPost)
 	router.HandleFunc("/api/v1/applications.delete", serviceWrapper(&applicationv1.DeleteApplicationRequest{}, appServer.DeleteApplication)).Methods(http.MethodPost)
 
+	server := &http.Server{Handler: router}
+
+	// shut the server down gracefully when the context is cancelled
+	go func() {
+		<-ctx.Done()
+		log.Debug("Gracefully shutting down HTTP server")
+
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		if err := server.Shutdown(shutdownCtx); err != nil {
+			log.Warnf("Failed to gracefully shut down HTTP server: %v", err)
+		}
+	}()
+
 	// start listening for HTTP connections
 	log.Infof("Started listening for HTTP connections on '%s'", conf.GetNetworkAddress())
-	err = http.Serve(lis, router)
+	err = server.Serve(lis)
 	if errors.Is(err, http.ErrServerClosed) {
 		log.Info("HTTP server has been closed")
 	} else {

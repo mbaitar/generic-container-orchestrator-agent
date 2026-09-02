@@ -1,6 +1,7 @@
 package control
 
 import (
+	"context"
 	"log"
 	"sync"
 	"testing"
@@ -14,37 +15,37 @@ import (
 type NilProvider struct {
 }
 
-func (n NilProvider) CreateFeature(feat feature.Feature) error {
+func (n NilProvider) CreateFeature(ctx context.Context, feat feature.Feature) error {
 	return nil
 }
 
-func (n NilProvider) UpdateFeature(feat feature.Feature) error {
+func (n NilProvider) UpdateFeature(ctx context.Context, feat feature.Feature) error {
 	return nil
 }
 
-func (n NilProvider) RemoveFeature(feat feature.Feature) error {
+func (n NilProvider) RemoveFeature(ctx context.Context, feat feature.Feature) error {
 	return nil
 }
 
-func (n NilProvider) CreateApplication(app *resource.Application) error {
+func (n NilProvider) CreateApplication(ctx context.Context, app *resource.Application) error {
 	return nil
 }
 
-func (n NilProvider) UpdateApplication(app *resource.Application) error {
+func (n NilProvider) UpdateApplication(ctx context.Context, app *resource.Application) error {
 	return nil
 }
 
-func (n NilProvider) RemoveApplication(app *resource.Application) error {
+func (n NilProvider) RemoveApplication(ctx context.Context, app *resource.Application) error {
 	return nil
 }
 
-func (n NilProvider) ActualState() (*state.Spec, error) {
+func (n NilProvider) ActualState(ctx context.Context) (*state.Spec, error) {
 	empty := state.EmptySpec()
 	return empty, nil
 }
 
 func TestControl_RegisterAndRemoveHandler(t *testing.T) {
-	control, _ := InitControl(&NilProvider{})
+	control, _ := InitControl(context.Background(), &NilProvider{})
 
 	n := 100
 	wg := sync.WaitGroup{}
