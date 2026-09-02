@@ -1,6 +1,7 @@
 package control
 
 import (
+	"fmt"
 	"os"
 	"path"
 
@@ -50,6 +51,13 @@ func NewStateController(ctrl *Control) *StateController {
 	if initial == nil {
 		controller.desired = state.EmptySpec()
 	} else {
+		// the persisted state bypasses the service layer, fail fast on
+		// hand-edited or corrupted state files
+		if err = initial.Validate(); err != nil {
+			log.Errorf("Persisted state is invalid: %v", err)
+			os.Exit(1)
+		}
+
 		controller.desired = initial
 	}
 
@@ -86,7 +94,7 @@ func (s *StateController) CreateApplication(application resource.Application) (*
 
 	err = s.persisted.Persist(s.desired)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to persist desired state: %w", err)
 	}
 
 	return s.desired, nil
@@ -101,7 +109,7 @@ func (s *StateController) UpdateApplication(application resource.Application) (*
 
 	err = s.persisted.Persist(s.desired)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to persist desired state: %w", err)
 	}
 
 	return s.desired, nil
@@ -116,7 +124,7 @@ func (s *StateController) DeleteApplication(name string) (*state.Spec, error) {
 
 	err = s.persisted.Persist(s.desired)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to persist desired state: %w", err)
 	}
 
 	return s.desired, nil
@@ -127,5 +135,12 @@ func (s *StateController) GetCurrentState() *state.Spec {
 }
 
 func (s *StateController) handleChange(update state.Spec) {
+	// changes coming from the watched state file bypass the service layer,
+	// refuse invalid specifications and keep the last known good state
+	if err := update.Validate(); err != nil {
+		log.Warnf("Ignoring state file change with invalid specification: %v", err)
+		return
+	}
+
 	s.ctrl.Apply(update)
 }

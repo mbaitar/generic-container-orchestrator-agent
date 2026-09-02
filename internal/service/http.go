@@ -4,20 +4,20 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"net"
 	"net/http"
 	"os"
 	"time"
 
-	applicationv1 "github.com/mbaitar/gco/agent/gen/proto/application/v1"
 	"github.com/mbaitar/gco/agent/internal/config"
 	"github.com/mbaitar/gco/agent/internal/log"
 	"github.com/mbaitar/gco/agent/internal/service/application"
 	"github.com/mbaitar/gco/agent/pkg/control"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/gorilla/mux"
 )
@@ -46,11 +46,11 @@ func StartHTTP(ctx context.Context, conf config.Http, controller *control.StateC
 
 	// register routes
 	router := mux.NewRouter().StrictSlash(true)
-	router.HandleFunc("/api/v1/applications.list", serviceWrapper(&applicationv1.ListApplicationsRequest{}, appServer.ListApplications)).Methods(http.MethodPost)
-	router.HandleFunc("/api/v1/applications.create", serviceWrapper(&applicationv1.CreateApplicationRequest{}, appServer.CreateApplication)).Methods(http.MethodPost)
-	router.HandleFunc("/api/v1/applications.get", serviceWrapper(&applicationv1.GetApplicationRequest{}, appServer.GetApplication)).Methods(http.MethodPost)
-	router.HandleFunc("/api/v1/applications.update", serviceWrapper(&applicationv1.UpdateApplicationRequest{}, appServer.UpdateApplication)).Methods(http.MethodPost)
-	router.HandleFunc("/api/v1/applications.delete", serviceWrapper(&applicationv1.DeleteApplicationRequest{}, appServer.DeleteApplication)).Methods(http.MethodPost)
+	router.HandleFunc("/api/v1/applications.list", serviceWrapper(appServer.ListApplications)).Methods(http.MethodPost)
+	router.HandleFunc("/api/v1/applications.create", serviceWrapper(appServer.CreateApplication)).Methods(http.MethodPost)
+	router.HandleFunc("/api/v1/applications.get", serviceWrapper(appServer.GetApplication)).Methods(http.MethodPost)
+	router.HandleFunc("/api/v1/applications.update", serviceWrapper(appServer.UpdateApplication)).Methods(http.MethodPost)
+	router.HandleFunc("/api/v1/applications.delete", serviceWrapper(appServer.DeleteApplication)).Methods(http.MethodPost)
 
 	server := &http.Server{Handler: router}
 
@@ -79,8 +79,12 @@ func StartHTTP(ctx context.Context, conf config.Http, controller *control.StateC
 
 }
 
-func serviceWrapper[ServiceRequest any, ServiceResponse any](sReq ServiceRequest, handler func(ctx context.Context, sReq ServiceRequest) (ServiceResponse, error)) func(res http.ResponseWriter, req *http.Request) {
+func serviceWrapper[ServiceRequest any, ServiceResponse any](handler func(ctx context.Context, sReq *ServiceRequest) (ServiceResponse, error)) func(res http.ResponseWriter, req *http.Request) {
 	return func(res http.ResponseWriter, req *http.Request) {
+		// allocate a fresh request for every call, sharing one instance
+		// would leak fields between requests
+		sReq := new(ServiceRequest)
+
 		// read request body
 		bytes, err := io.ReadAll(req.Body)
 		if err != nil {
@@ -88,24 +92,36 @@ func serviceWrapper[ServiceRequest any, ServiceResponse any](sReq ServiceRequest
 			return
 		}
 
-		// parse request body
+		// parse request body, protojson accepts both the proto and the
+		// camelCase field names
 		if len(bytes) > 0 {
-			if err = json.Unmarshal(bytes, sReq); err != nil {
+			if msg, ok := any(sReq).(proto.Message); ok {
+				err = protojson.UnmarshalOptions{DiscardUnknown: true}.Unmarshal(bytes, msg)
+			} else {
+				err = json.Unmarshal(bytes, sReq)
+			}
+
+			if err != nil {
 				writeHttpError(res, err)
 				return
 			}
 		}
 
 		// execute handler function
-		ctx := context.Background()
-		sRes, err := handler(ctx, sReq)
+		sRes, err := handler(req.Context(), sReq)
 		if err != nil {
 			writeHttpError(res, err)
 			return
 		}
 
-		// format response
-		body, err := json.Marshal(sRes)
+		// format response, keeping the proto field names in the output
+		var body []byte
+		if msg, ok := any(sRes).(proto.Message); ok {
+			body, err = protojson.MarshalOptions{UseProtoNames: true}.Marshal(msg)
+		} else {
+			body, err = json.Marshal(sRes)
+		}
+
 		if err != nil {
 			writeHttpError(res, err)
 			return
@@ -135,8 +151,12 @@ func writeHttpError(res http.ResponseWriter, error error) {
 		message = s.Message()
 	}
 
-	body := fmt.Sprintf(`{"message":"%s"}`, message)
+	body, err := json.Marshal(map[string]string{"message": message})
+	if err != nil {
+		body = []byte(`{"message":"internal server error"}`)
+	}
+
 	res.Header().Set("Content-Type", "application/json")
 	res.WriteHeader(httpStatus)
-	res.Write([]byte(body))
+	res.Write(body)
 }

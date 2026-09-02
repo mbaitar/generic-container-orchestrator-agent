@@ -22,9 +22,54 @@ message Port {
   Protocol protocol = 3;
 }
 
+// Volume describes a volume that is mounted into the container. The source can
+// either be an absolute path on the host or the name of a docker volume.
+message Volume {
+  string source = 1;
+  string destination = 2;
+  bool read_only = 3;
+}
+
+// HealthCheck describes how the container provider should verify that the
+// application is healthy. The test follows the docker convention, e.g.
+// ["CMD", "curl", "-f", "http://localhost/"] or ["CMD-SHELL", "curl -f http://localhost/"].
+message HealthCheck {
+  repeated string test = 1;
+  uint32 interval_seconds = 2;
+  uint32 timeout_seconds = 3;
+  uint32 retries = 4;
+  uint32 start_period_seconds = 5;
+}
+
+// Resources describes the resource limits for an application instance.
+message Resources {
+  // memory is a human readable memory limit, e.g. "512m" or "1g".
+  string memory = 1;
+  // cpus limits the amount of CPU available to the container, e.g. 0.5.
+  double cpus = 2;
+}
+
 message Application {
   string name = 1;
   Image image = 2;
   repeated Port ports = 3;
   uint32 instances = 4;
+
+  // env lists the environment variables passed to the container.
+  map<string, string> env = 5;
+  // volumes lists the volumes mounted into the container.
+  repeated Volume volumes = 6;
+  // labels lists custom labels added to the container. Keys within the
+  // reserved 'gco.io' namespace are rejected.
+  map<string, string> labels = 7;
+  // network_mode configures the container network, e.g. "bridge", "host",
+  // "none" or the name of an existing docker network.
+  string network_mode = 8;
+  // restart_policy configures the provider native restart behaviour:
+  // "no", "always", "on-failure" or "unless-stopped".
+  string restart_policy = 9;
+  // health_check configures the container health check.
+  HealthCheck health_check = 10;
+  // resources configures the resource limits for the application.
+  Resources resources = 11;
 }

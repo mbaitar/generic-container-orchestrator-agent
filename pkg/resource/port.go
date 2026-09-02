@@ -66,11 +66,10 @@ func FromPortsV1(v1 []*applicationv1.Port) []Port {
 }
 
 func FromProtocolV1(v1 applicationv1.Protocol) Protocol {
-	if v1 == applicationv1.Protocol_PROTOCOL_TCP {
-		return TcpProtocol
-	} else if v1 == applicationv1.Protocol_PROTOCOL_UDP {
+	if v1 == applicationv1.Protocol_PROTOCOL_UDP {
 		return UdpProtocol
-	} else {
-		return "unknown"
 	}
+
+	// default to tcp when unspecified
+	return TcpProtocol
 }

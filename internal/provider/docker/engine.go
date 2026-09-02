@@ -73,8 +73,8 @@ func (p *Provider) getFilteredContainers(ctx context.Context, opts *container.Li
 		return nil, err
 	}
 
-	parsed := make([]internalContainer, len(containers))
-	for i, c := range containers {
+	parsed := make([]internalContainer, 0, len(containers))
+	for _, c := range containers {
 		// inject with bind info
 		containerJson, inspectErr := p.client.ContainerInspect(ctx, c.ID)
 		if inspectErr != nil {
@@ -82,7 +82,7 @@ func (p *Provider) getFilteredContainers(ctx context.Context, opts *container.Li
 			continue
 		}
 
-		parsed[i] = fromDockerContainer(containerJson)
+		parsed = append(parsed, fromDockerContainer(containerJson))
 	}
 
 	return parsed, nil

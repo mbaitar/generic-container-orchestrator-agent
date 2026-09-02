@@ -42,6 +42,45 @@ The following commands can be used to perform required actions upon the code bas
 make test
 ```
 
+## Application specification
+
+An application is described with the following fields (JSON shown for the HTTP API,
+the same shape applies to the gRPC API):
+
+```json
+{
+  "application": {
+    "name": "my-app",
+    "image": { "name": "nginx", "tag": "alpine", "pull_policy": "always" },
+    "ports": [{ "container_port": 80, "host_port": 8090, "protocol": 1 }],
+    "instances": 1,
+    "env": { "APP_MODE": "production" },
+    "volumes": [{ "source": "my-volume", "destination": "/data", "read_only": false }],
+    "labels": { "team": "platform" },
+    "network_mode": "bridge",
+    "restart_policy": "unless-stopped",
+    "health_check": {
+      "test": ["CMD", "curl", "-f", "http://localhost/"],
+      "interval_seconds": 10,
+      "timeout_seconds": 3,
+      "retries": 3,
+      "start_period_seconds": 5
+    },
+    "resources": { "memory": "256m", "cpus": 0.5 }
+  }
+}
+```
+
+- `env`, `volumes`, `labels`, `network_mode`, `restart_policy`, `health_check` and
+  `resources` are optional. Both `snake_case` and `camelCase` field names are accepted.
+- `labels` may not use the reserved `gco.io` namespace.
+- `restart_policy` accepts `no`, `always`, `on-failure` or `unless-stopped`. While a
+  docker native restart policy is restarting a container, the agent leaves it alone.
+- `health_check.test` must start with `CMD`, `CMD-SHELL` or `NONE`.
+- `resources.memory` accepts human readable values such as `512m` or `1g`, with a
+  minimum of `6m` (the docker daemon minimum).
+- A volume `source` is either an absolute host path or the name of a docker volume.
+
 ## Supported Providers
 
 | Provider     | Description                                                                                                                                    | Version   |

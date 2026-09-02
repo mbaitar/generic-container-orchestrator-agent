@@ -33,9 +33,10 @@ func (p *Provider) WithConfig(conf config.DockerProvider) *Provider {
 }
 
 func (p *Provider) CreateApplication(ctx context.Context, app *resource.Application) error {
-	container := fromApplicationResource(app)
-
-	// TODO: retrieve configuration hash for this resource?
+	container, err := fromApplicationResource(app)
+	if err != nil {
+		return err
+	}
 
 	id, err := p.createContainer(ctx, container)
 	if err != nil {

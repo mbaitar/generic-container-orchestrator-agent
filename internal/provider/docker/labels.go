@@ -30,6 +30,7 @@ var (
 	kindLabelTag      = platformLabelTag("kind")
 	featureLabelTag   = platformLabelTag("feature")
 	configLabelTag    = platformLabelTag("config")
+	hashLabelTag      = platformLabelTag("hash")
 
 	composeProjectLabelTag labelTag = "com.docker.compose.project"
 )
@@ -56,6 +57,10 @@ func featureLabel(name string) label {
 
 func configLabel(value string) label {
 	return label{tag: configLabelTag, value: value}
+}
+
+func hashLabel(value string) label {
+	return label{tag: hashLabelTag, value: value}
 }
 
 func composeProjectLabel() label {

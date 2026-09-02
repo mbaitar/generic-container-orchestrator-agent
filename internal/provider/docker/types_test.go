@@ -102,7 +102,8 @@ func TestInternalContainer_fromApplicationResource(t *testing.T) {
 		},
 	}
 
-	c := fromApplicationResource(application)
+	c, err := fromApplicationResource(application)
+	assert.Nil(t, err, "should not have returned an error")
 	assert.Equal(t, "postgres", c.name)
 	assert.Equal(t, "postgres:latest", c.image)
 	assert.Equal(t, "5432", c.ports[0].publicPort())
@@ -122,7 +123,8 @@ func TestInternalContainer_toApplicationResource(t *testing.T) {
 		},
 	}
 
-	ic := fromApplicationResource(original)
+	ic, err := fromApplicationResource(original)
+	assert.Nil(t, err, "should not have returned an error")
 	parsed := ic.toApplicationResource()
 	assert.Equal(t, original.Name, parsed.Name)
 	assert.Equal(t, original.Image.Name, parsed.Image.Name)
@@ -148,7 +150,8 @@ func TestInternalContainer_fromApplicationResource_withLogConfig(t *testing.T) {
 		},
 	}
 
-	ic := fromApplicationResource(application)
+	ic, err := fromApplicationResource(application)
+	assert.Nil(t, err, "should not have returned an error")
 	config := ic.hostConfig()
 
 	if assert.NotNil(t, config, "should not have returned a nil config") {

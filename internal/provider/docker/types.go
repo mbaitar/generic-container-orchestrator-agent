@@ -2,11 +2,14 @@ package docker
 
 import (
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/go-connections/nat"
+	"github.com/docker/go-units"
 	"github.com/mbaitar/gco/agent/pkg/resource"
 )
 
@@ -86,6 +89,13 @@ type internalContainer struct {
 	state      string
 	logConfig  container.LogConfig
 	pullPolicy imagePullPolicy
+
+	env           []string
+	networkMode   string
+	restartPolicy string
+	healthCheck   *container.HealthConfig
+	memoryBytes   int64
+	nanoCpus      int64
 }
 
 func fromDockerContainer(c container.InspectResponse) internalContainer {
@@ -109,6 +119,12 @@ func fromDockerContainer(c container.InspectResponse) internalContainer {
 		}
 	}
 
+	// PortBindings is a map, sort for a deterministic order so the
+	// reconstructed application hashes consistently
+	sort.Slice(ic.ports, func(a, b int) bool {
+		return ic.ports[a] < ic.ports[b]
+	})
+
 	for _, binding := range c.HostConfig.Binds {
 		mount := volumeMountFromBind(binding)
 		if mount != nil {
@@ -119,7 +135,7 @@ func fromDockerContainer(c container.InspectResponse) internalContainer {
 	return *ic
 }
 
-func fromApplicationResource(app *resource.Application) *internalContainer {
+func fromApplicationResource(app *resource.Application) (*internalContainer, error) {
 	ic := &internalContainer{
 		name:   app.Name,
 		image:  fmt.Sprintf("%s:%s", app.Image.Name, app.Image.Tag),
@@ -131,9 +147,66 @@ func fromApplicationResource(app *resource.Application) *internalContainer {
 		ic.ports[i] = newContainerPort(port.ContainerPort, port.HostPort, string(port.Protocol))
 	}
 
+	// map environment variables in a deterministic order
+	if len(app.Env) > 0 {
+		keys := make([]string, 0, len(app.Env))
+		for key := range app.Env {
+			keys = append(keys, key)
+		}
+		sort.Strings(keys)
+
+		ic.env = make([]string, 0, len(keys))
+		for _, key := range keys {
+			ic.env = append(ic.env, fmt.Sprintf("%s=%s", key, app.Env[key]))
+		}
+	}
+
+	// map volumes
+	for _, volume := range app.Volumes {
+		ic.volumes = append(ic.volumes, volumeMount{
+			source:      volume.Source,
+			destination: volume.Destination,
+			readonly:    volume.ReadOnly,
+		})
+	}
+
+	// map network and restart configuration
+	ic.networkMode = app.NetworkMode
+	ic.restartPolicy = app.RestartPolicy
+
+	// map health check
+	if app.HealthCheck != nil {
+		ic.healthCheck = &container.HealthConfig{
+			Test:        app.HealthCheck.Test,
+			Interval:    time.Duration(app.HealthCheck.IntervalSeconds) * time.Second,
+			Timeout:     time.Duration(app.HealthCheck.TimeoutSeconds) * time.Second,
+			StartPeriod: time.Duration(app.HealthCheck.StartPeriodSeconds) * time.Second,
+			Retries:     int(app.HealthCheck.Retries),
+		}
+	}
+
+	// map resource limits
+	if app.Resources != nil {
+		if app.Resources.Memory != "" {
+			bytes, err := units.RAMInBytes(app.Resources.Memory)
+			if err != nil {
+				return nil, fmt.Errorf("invalid memory limit '%s': %v", app.Resources.Memory, err)
+			}
+			ic.memoryBytes = bytes
+		}
+
+		ic.nanoCpus = int64(app.Resources.Cpus * 1e9)
+	}
+
+	// set custom labels before the reserved labels so they cannot be overridden
+	for key, value := range app.Labels {
+		ic.addLabel(customLabel(key, value))
+	}
+
 	// set default label
 	ic.addLabel(kindLabel(resource.ApplicationKind))
 	ic.addLabel(nameLabel(app.Name))
+	ic.addLabel(hashLabel(app.CalculateHash()))
 
 	// parse log config
 	if app.LogConfig != nil {
@@ -157,7 +230,7 @@ func fromApplicationResource(app *resource.Application) *internalContainer {
 		ic.pullPolicy = whenNotPresentPolicy
 	}
 
-	return ic
+	return ic, nil
 }
 
 func (i *internalContainer) config() *container.Config {
@@ -170,6 +243,8 @@ func (i *internalContainer) config() *container.Config {
 		Labels:       i.labels,
 		Image:        i.image,
 		ExposedPorts: ports,
+		Env:          i.env,
+		Healthcheck:  i.healthCheck,
 	}
 }
 
@@ -191,11 +266,24 @@ func (i *internalContainer) hostConfig() *container.HostConfig {
 		binds[idx] = volume.asBind()
 	}
 
-	return &container.HostConfig{
+	hostConfig := &container.HostConfig{
 		PortBindings: ports,
 		LogConfig:    i.logConfig,
 		Binds:        binds,
+		NetworkMode:  container.NetworkMode(i.networkMode),
+		Resources: container.Resources{
+			Memory:   i.memoryBytes,
+			NanoCPUs: i.nanoCpus,
+		},
 	}
+
+	if i.restartPolicy != "" {
+		hostConfig.RestartPolicy = container.RestartPolicy{
+			Name: container.RestartPolicyMode(i.restartPolicy),
+		}
+	}
+
+	return hostConfig
 }
 
 func (i *internalContainer) addLabel(label label) {
@@ -241,14 +329,27 @@ func (i *internalContainer) getPortResources() []resource.Port {
 
 func (i *internalContainer) toApplicationResource() resource.Application {
 	instances := 0
-	if i.state == "running" {
+
+	// a container in the 'restarting' state is being managed by a docker
+	// native restart policy, counting it as down would make the agent and
+	// docker fight over the same container in an endless remove/create loop
+	if i.state == "running" || i.state == "restarting" {
 		instances = 1
 	}
 
-	return resource.Application{
+	app := resource.Application{
 		Name:      i.getLabel(nameLabelTag),
 		Image:     i.getImageResource(),
 		Ports:     i.getPortResources(),
 		Instances: instances,
 	}
+
+	// the configuration hash stored on the container is authoritative for
+	// change detection, reconstructing every field from the container
+	// (e.g. env vars merged with image defaults) would never be exact
+	if h := i.getLabel(hashLabelTag); h != "" {
+		app.SetHash(h)
+	}
+
+	return app
 }
