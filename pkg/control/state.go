@@ -39,7 +39,8 @@ func NewStateController(ctrl *Control) *StateController {
 	}
 
 	// create local persistence controller
-	persisted := persistence.NewLocalController(path.Join(gcoDir, "gco.state"))
+	stateFile := path.Join(gcoDir, "gco.state")
+	persisted := persistence.NewLocalController(stateFile)
 
 	// get initial state from persisted state
 	initial, err := persisted.Read()
@@ -54,7 +55,7 @@ func NewStateController(ctrl *Control) *StateController {
 		// the persisted state bypasses the service layer, fail fast on
 		// hand-edited or corrupted state files
 		if err = initial.Validate(); err != nil {
-			log.Errorf("Persisted state is invalid: %v", err)
+			log.Errorf("Persisted state in '%s' is invalid: %v, fix or remove the file to start the agent", stateFile, err)
 			os.Exit(1)
 		}
 

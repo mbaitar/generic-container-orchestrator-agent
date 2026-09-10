@@ -24,6 +24,9 @@ type Provider struct {
 	// broken specification is not retried on every resync.
 	failedUpdates map[string]updateFailure
 
+	// networkReady caches whether the managed docker network exists.
+	networkReady bool
+
 	// healthPollInterval, settleDuration, updateBackoff and
 	// healthDeadlineOverride tune the rolling update behaviour, zero values
 	// fall back to the package defaults.
@@ -48,6 +51,12 @@ func (p *Provider) WithConfig(conf config.DockerProvider) *Provider {
 }
 
 func (p *Provider) CreateApplication(ctx context.Context, app *resource.Application) error {
+	if effectiveInstances(app) > 1 {
+		// the reconcile path also handles the initial creation and cleans up
+		// any leftover containers whose names would otherwise conflict
+		return p.reconcileInstances(ctx, app)
+	}
+
 	container, err := fromApplicationResource(app)
 	if err != nil {
 		return err
@@ -67,6 +76,10 @@ func (p *Provider) CreateApplication(ctx context.Context, app *resource.Applicat
 }
 
 func (p *Provider) UpdateApplication(ctx context.Context, app *resource.Application) error {
+	if effectiveInstances(app) > 1 {
+		return p.reconcileInstances(ctx, app)
+	}
+
 	containers, err := p.getContainersByName(ctx, app.Name)
 	if err != nil {
 		return err
@@ -190,10 +203,8 @@ func (p *Provider) ActualState(ctx context.Context) (*state.Spec, error) {
 		return nil, err
 	}
 
-	// after an interrupted or partially failed rolling update, multiple
-	// containers can carry the same application name; keep the preferred one
-	// (running, newest first in the docker listing) and remove the rest, as
-	// no other code path revisits leftovers once the state has converged
+	// group the containers per application: the instances of an application
+	// all carry the same name label
 	grouped := make(map[string][]internalContainer)
 	order := make([]string, 0, len(appContainers))
 	for _, container := range appContainers {
@@ -208,16 +219,13 @@ func (p *Provider) ActualState(ctx context.Context) (*state.Spec, error) {
 	for _, name := range order {
 		group := grouped[name]
 
-		preferred := 0
+		// remove containers which are not running, they are leftovers of
+		// crashed instances or interrupted updates; the reconciler recreates
+		// whatever the desired state still needs
+		running := make([]internalContainer, 0, len(group))
 		for i := range group {
-			if group[i].state == "running" {
-				preferred = i
-				break
-			}
-		}
-
-		for i := range group {
-			if i == preferred {
+			if group[i].state == "running" || group[i].state == "restarting" {
+				running = append(running, group[i])
 				continue
 			}
 
@@ -227,7 +235,38 @@ func (p *Provider) ActualState(ctx context.Context) (*state.Spec, error) {
 			}
 		}
 
-		applications = append(applications, group[preferred].toApplicationResource())
+		if len(running) == 0 {
+			// absent from the actual state, the reconciler recreates it
+			continue
+		}
+
+		// the observed version is the configuration hash the majority of the
+		// running instances carry, ties go to the newest container (docker
+		// lists newest first)
+		counts := make(map[string]int)
+		for i := range running {
+			counts[running[i].getLabel(hashLabelTag)]++
+		}
+
+		representative := 0
+		for i := range running {
+			if counts[running[i].getLabel(hashLabelTag)] > counts[running[representative].getLabel(hashLabelTag)] {
+				representative = i
+			}
+		}
+
+		// instances counts every running container, so surplus containers of
+		// any version show up as an instance mismatch to the reconciler
+		app := running[representative].toApplicationResource()
+		app.Instances = len(running)
+
+		// mixed versions can otherwise look converged (majority hash equals
+		// the desired one at the desired count), force a reconcile instead
+		if len(counts) > 1 {
+			app.SetHash("inconsistent")
+		}
+
+		applications = append(applications, app)
 	}
 
 	// extract features

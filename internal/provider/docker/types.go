@@ -8,10 +8,16 @@ import (
 	"time"
 
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/network"
 	"github.com/docker/go-connections/nat"
 	"github.com/docker/go-units"
 	"github.com/mbaitar/gco/agent/pkg/resource"
 )
+
+// managedNetworkName is the docker network the agent creates and attaches
+// applications to by default, so instances of an application (and applications
+// among each other) can reach each other by name through docker's DNS.
+const managedNetworkName = "gco"
 
 // containerPort describes a port exposed by a container.
 type containerPort string
@@ -91,6 +97,44 @@ func containerName(app *resource.Application) string {
 	return fmt.Sprintf("%s-%s", app.Name, h[:8])
 }
 
+// effectiveNetworkMode returns the docker network an application should run
+// on, defaulting to the managed network.
+func effectiveNetworkMode(app *resource.Application) string {
+	if app.NetworkMode == "" {
+		return managedNetworkName
+	}
+
+	return app.NetworkMode
+}
+
+// nextInstanceName picks the first free instance name for an application,
+// e.g. 'my-app-0cb088a3-2', and marks it as taken.
+func nextInstanceName(app *resource.Application, taken map[string]struct{}) string {
+	base := containerName(app)
+
+	for i := 1; ; i++ {
+		candidate := fmt.Sprintf("%s-%d", base, i)
+		if _, used := taken[candidate]; !used {
+			taken[candidate] = struct{}{}
+			return candidate
+		}
+	}
+}
+
+// networkingConfig returns the endpoint configuration carrying the network
+// aliases, or nil when no aliases apply.
+func (i *internalContainer) networkingConfig() *network.NetworkingConfig {
+	if len(i.networkAliases) == 0 {
+		return nil
+	}
+
+	return &network.NetworkingConfig{
+		EndpointsConfig: map[string]*network.EndpointSettings{
+			i.networkMode: {Aliases: i.networkAliases},
+		},
+	}
+}
+
 // internalContainer describes the internal structure on how the docker provider handles container data.
 type internalContainer struct {
 	id         string
@@ -103,12 +147,13 @@ type internalContainer struct {
 	logConfig  container.LogConfig
 	pullPolicy imagePullPolicy
 
-	env           []string
-	networkMode   string
-	restartPolicy string
-	healthCheck   *container.HealthConfig
-	memoryBytes   int64
-	nanoCpus      int64
+	env            []string
+	networkMode    string
+	networkAliases []string
+	restartPolicy  string
+	healthCheck    *container.HealthConfig
+	memoryBytes    int64
+	nanoCpus       int64
 }
 
 func fromDockerContainer(c container.InspectResponse) internalContainer {
@@ -184,8 +229,21 @@ func fromApplicationResource(app *resource.Application) (*internalContainer, err
 		})
 	}
 
-	// map network and restart configuration
-	ic.networkMode = app.NetworkMode
+	// map network and restart configuration, defaulting to the managed
+	// network so applications can discover each other by name
+	ic.networkMode = effectiveNetworkMode(app)
+
+	// docker's embedded DNS resolves an alias to every container carrying
+	// it, giving DNS round robin across the instances of an application;
+	// the default bridge, host and container networks do not support aliases
+	switch ic.networkMode {
+	case "default", "bridge", "host", "none":
+	default:
+		if !strings.HasPrefix(ic.networkMode, "container:") {
+			ic.networkAliases = []string{app.Name}
+		}
+	}
+
 	ic.restartPolicy = app.RestartPolicy
 
 	// map health check

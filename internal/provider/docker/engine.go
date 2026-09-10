@@ -7,6 +7,7 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
 	imagetypes "github.com/docker/docker/api/types/image"
+	"github.com/docker/docker/api/types/network"
 	"github.com/mbaitar/gco/agent/internal/files"
 	"github.com/mbaitar/gco/agent/internal/log"
 	"github.com/mbaitar/gco/agent/pkg/resource"
@@ -43,11 +44,60 @@ func (p *Provider) createContainer(ctx context.Context, c *internalContainer) (s
 		c.addLabel(composeProjectLabel())
 	}
 
+	// make sure the managed network exists before attaching to it
+	if c.networkMode == managedNetworkName {
+		if err = p.ensureManagedNetwork(ctx); err != nil {
+			return "", err
+		}
+	}
+
 	config := c.config()
 	hostConfig := c.hostConfig()
 
-	body, err := p.client.ContainerCreate(ctx, config, hostConfig, nil, nil, c.name)
+	body, err := p.client.ContainerCreate(ctx, config, hostConfig, c.networkingConfig(), nil, c.name)
+	if err != nil && c.networkMode == managedNetworkName {
+		// the managed network may have been removed externally, verify it
+		// again on the next attempt
+		p.networkReady = false
+	}
+
 	return body.ID, err
+}
+
+// ensureManagedNetwork creates the managed docker network when it does not
+// exist yet. The result is cached for the lifetime of the provider.
+func (p *Provider) ensureManagedNetwork(ctx context.Context) error {
+	if p.networkReady {
+		return nil
+	}
+
+	opts := network.ListOptions{Filters: filters.NewArgs()}
+	opts.Filters.Add("name", managedNetworkName)
+
+	networks, err := p.client.NetworkList(ctx, opts)
+	if err != nil {
+		return err
+	}
+
+	for _, n := range networks {
+		// the name filter matches substrings, compare exactly
+		if n.Name == managedNetworkName {
+			p.networkReady = true
+			return nil
+		}
+	}
+
+	log.Infof("Creating managed docker network '%s'", managedNetworkName)
+	_, err = p.client.NetworkCreate(ctx, managedNetworkName, network.CreateOptions{
+		Driver: "bridge",
+		Labels: map[string]string{managedByLabelTag.string(): managedByLabel().value},
+	})
+	if err != nil {
+		return err
+	}
+
+	p.networkReady = true
+	return nil
 }
 
 // removeContainer removes a container on the system with the referenced id.

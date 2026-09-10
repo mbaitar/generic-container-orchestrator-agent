@@ -44,6 +44,15 @@ type TestClient struct {
 	// ImagePull
 	imagePullArgs      [][]any
 	imagePullReturnErr error
+
+	// NetworkList - defaults to the managed network being present
+	networkListReturn    []network.Summary
+	networkListReturnErr error
+	networkListArgs      [][]any
+
+	// NetworkCreate
+	networkCreateArgs      [][]any
+	networkCreateReturnErr error
 }
 
 func NewTestClient() *TestClient {
@@ -97,6 +106,29 @@ func (t *TestClient) ContainerList(ctx context.Context, options container.ListOp
 
 	t.containerListArgs = append(t.containerListArgs, args)
 	return t.containerListReturnContainers, t.containerListReturnErr
+}
+
+func (t *TestClient) NetworkList(ctx context.Context, options network.ListOptions) ([]network.Summary, error) {
+	args := make([]any, 2)
+	args[0] = ctx
+	args[1] = options
+	t.networkListArgs = append(t.networkListArgs, args)
+
+	if t.networkListReturn == nil && t.networkListReturnErr == nil {
+		// default: the managed network already exists
+		return []network.Summary{{Name: managedNetworkName}}, nil
+	}
+
+	return t.networkListReturn, t.networkListReturnErr
+}
+
+func (t *TestClient) NetworkCreate(ctx context.Context, name string, options network.CreateOptions) (network.CreateResponse, error) {
+	args := make([]any, 3)
+	args[0] = ctx
+	args[1] = name
+	args[2] = options
+	t.networkCreateArgs = append(t.networkCreateArgs, args)
+	return network.CreateResponse{ID: "network_id"}, t.networkCreateReturnErr
 }
 
 func (t *TestClient) ContainerStop(ctx context.Context, id string, options container.StopOptions) error {

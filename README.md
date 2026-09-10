@@ -73,6 +73,12 @@ the same shape applies to the gRPC API):
 
 - `env`, `volumes`, `labels`, `network_mode`, `restart_policy`, `health_check` and
   `resources` are optional. Both `snake_case` and `camelCase` field names are accepted.
+- `instances` scales the application: the agent keeps that many containers
+  running, heals crashed ones and rolls out configuration changes instance by
+  instance. A missing or zero value means a single instance. Because a fixed
+  host port can only be bound once, `instances > 1` cannot be combined with
+  fixed host ports (use `host_port: 0` for random ports, or none at all) or
+  with `network_mode: host`.
 - `labels` may not use the reserved `gco.io` namespace.
 - `restart_policy` accepts `no`, `always`, `on-failure` or `unless-stopped`. While a
   docker native restart policy is restarting a container, the agent leaves it alone.
@@ -104,9 +110,23 @@ the failed configuration is not retried for 5 minutes so a broken spec cannot
 disrupt a running application on every reconcile cycle.
 
 Because the new and old container briefly coexist, docker container names carry
-a short configuration hash (e.g. `my-app-0cb088a3`). Address containers through
-the `gco.io/name` label rather than the docker name, e.g.
+a short configuration hash (e.g. `my-app-0cb088a3`, instances append an index
+such as `my-app-0cb088a3-2`). Address containers through the `gco.io/name`
+label rather than the docker name, e.g.
 `docker ps --filter label=gco.io/name=my-app`.
+
+## Service discovery
+
+Applications without an explicit `network_mode` are attached to a managed
+docker network called `gco`, created by the agent on demand. Every container
+carries a DNS alias equal to its application name, so:
+
+- containers reach other applications simply by name (`http://my-api/`);
+- with multiple instances, docker's embedded DNS resolves the name to every
+  instance, giving DNS round robin load balancing inside the network.
+
+Containers created by an older agent version remain on the default bridge
+until their next configuration change rolls them onto the managed network.
 
 ## Supported Providers
 

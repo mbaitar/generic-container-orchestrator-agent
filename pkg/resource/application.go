@@ -139,6 +139,23 @@ func (a *Application) Validate() error {
 		return errors.New("image tag is required")
 	}
 
+	if a.Instances < 0 {
+		return errors.New("instances cannot be negative")
+	}
+
+	if a.Instances > 1 {
+		// multiple instances cannot share a fixed host port or the host network
+		for _, port := range a.Ports {
+			if port.HostPort > 0 {
+				return fmt.Errorf("fixed host port %d cannot be combined with multiple instances", port.HostPort)
+			}
+		}
+
+		if a.NetworkMode == "host" {
+			return errors.New("host networking cannot be combined with multiple instances")
+		}
+	}
+
 	for key := range a.Env {
 		if key == "" {
 			return errors.New("environment variable names cannot be empty")

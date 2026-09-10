@@ -34,9 +34,10 @@ type Control struct {
 	provider   provider.Provider
 	reconciler *diff.Reconciler
 
-	apply   chan state.Spec
-	observe chan state.Spec
-	exit    chan struct{}
+	apply          chan state.Spec
+	observe        chan state.Spec
+	resyncRequests chan struct{}
+	exit           chan struct{}
 
 	sem      *semaphore.Weighted
 	handlers map[string]StateUpdateHandler
@@ -62,9 +63,10 @@ func InitControl(ctx context.Context, p provider.Provider) (*Control, error) {
 		provider:   p,
 		reconciler: reconciler,
 
-		apply:   make(chan state.Spec, 1),
-		observe: make(chan state.Spec, 1),
-		exit:    make(chan struct{}),
+		apply:          make(chan state.Spec, 1),
+		observe:        make(chan state.Spec, 1),
+		resyncRequests: make(chan struct{}, 1),
+		exit:           make(chan struct{}),
 
 		sem:      semaphore.NewWeighted(1),
 		handlers: make(map[string]StateUpdateHandler),
@@ -90,6 +92,8 @@ func (c *Control) Start(ctx context.Context) {
 		case actual := <-c.observe:
 			log.Infof("Received signal from 'observe' channel (applications=%d)", len(actual.Applications))
 			c.reconciler.Observe(ctx, &actual)
+		case <-c.resyncRequests:
+			c.resync(ctx)
 		case <-ctx.Done():
 			log.Debug("Control loop context has been cancelled")
 			return
@@ -139,14 +143,25 @@ func (c *Control) watchProvider(ctx context.Context) {
 			}
 			debounce.Reset(c.debounceDelay)
 		case <-debounce.C:
-			c.resync(ctx)
+			c.requestResync()
 		case <-ticker.C:
-			c.resync(ctx)
+			c.requestResync()
 		}
 	}
 }
 
-// resync fetches the actual state from the provider and feeds it to the observe channel.
+// requestResync asks the control loop to fetch the actual state, a single
+// pending request is enough. The fetch happens on the control loop goroutine
+// itself: ActualState also cleans up stale containers, so it must never run
+// concurrently with an in-flight update.
+func (c *Control) requestResync() {
+	select {
+	case c.resyncRequests <- struct{}{}:
+	default:
+	}
+}
+
+// resync fetches the actual state from the provider and reconciles it.
 func (c *Control) resync(ctx context.Context) {
 	actual, err := c.provider.ActualState(ctx)
 	if err != nil {
@@ -154,11 +169,8 @@ func (c *Control) resync(ctx context.Context) {
 		return
 	}
 
-	select {
-	case c.observe <- *actual:
-	case <-ctx.Done():
-	case <-c.exit:
-	}
+	log.Infof("Resynced actual state from provider (applications=%d)", len(actual.Applications))
+	c.reconciler.Observe(ctx, actual)
 }
 
 // Stop halts the control loop and stops handling state updates.

@@ -121,6 +121,11 @@ func compare(desired *state.Spec, actual *state.Spec) *changes {
 				app.Instances = 1
 			}
 
+			// a missing instance count means a single instance
+			if app.Instances < 1 {
+				app.Instances = 1
+			}
+
 			actualHash := match.CalculateHash()
 			desiredHash := app.CalculateHash()
 

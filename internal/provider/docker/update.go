@@ -3,6 +3,7 @@ package docker
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/docker/docker/api/types/container"
@@ -35,6 +36,142 @@ const (
 type updateFailure struct {
 	hash    string
 	retryAt time.Time
+}
+
+// effectiveInstances returns the number of instances an application should
+// run, treating a missing instance count as a single instance.
+func effectiveInstances(app *resource.Application) int {
+	if app.Instances < 1 {
+		return 1
+	}
+
+	return app.Instances
+}
+
+// reconcileInstances drives a multi instance application towards its desired
+// state: outdated instances are replaced one by one (capacity is grown before
+// an old instance is retired), missing instances are added and surplus
+// instances are removed. Every new instance has to prove it is healthy first.
+// It also serves the initial creation, starting from zero instances.
+func (p *Provider) reconcileInstances(ctx context.Context, app *resource.Application) error {
+	desired := effectiveInstances(app)
+	desiredHash := app.CalculateHash()
+	expectedNetwork := effectiveNetworkMode(app)
+
+	// a recent failure only blocks the creation of new instances, cleaning up
+	// and scaling down must always be possible
+	blocked := p.skipRecentlyFailed(app.Name, desiredHash)
+
+	containers, err := p.getContainersByName(ctx, app.Name)
+	if err != nil {
+		return err
+	}
+
+	taken := make(map[string]struct{})
+	current := make([]internalContainer, 0, len(containers))
+	outdated := make([]internalContainer, 0)
+
+	for i := range containers {
+		c := containers[i]
+		taken[strings.TrimPrefix(c.name, "/")] = struct{}{}
+
+		if c.state != "running" && c.state != "restarting" {
+			// leftovers of crashed instances or interrupted updates
+			if err := p.removeContainer(ctx, c.id); err != nil {
+				log.Warnf("Failed to remove stale container of application '%s': %v", app.Name, err)
+			}
+			continue
+		}
+
+		// an instance only counts as capacity when it runs the desired
+		// configuration on the expected network and is not crash-looping
+		if c.state == "running" && c.getLabel(hashLabelTag) == desiredHash && c.networkMode == expectedNetwork {
+			current = append(current, c)
+		} else {
+			outdated = append(outdated, c)
+		}
+	}
+
+	// replace outdated instances one by one, growing capacity first
+	for i := range outdated {
+		if len(current) < desired {
+			if blocked != nil {
+				return blocked
+			}
+
+			created, err := p.createInstance(ctx, app, taken)
+			if err != nil {
+				p.recordUpdateFailure(app.Name, desiredHash)
+				return fmt.Errorf("update of application '%s' was rolled back: %w", app.Name, err)
+			}
+
+			current = append(current, *created)
+		}
+
+		if err := p.removeContainer(ctx, outdated[i].id); err != nil {
+			log.Warnf("Failed to remove outdated instance of application '%s': %v", app.Name, err)
+		}
+	}
+
+	// scale up to the desired instance count
+	for len(current) < desired {
+		if blocked != nil {
+			return blocked
+		}
+
+		created, err := p.createInstance(ctx, app, taken)
+		if err != nil {
+			p.recordUpdateFailure(app.Name, desiredHash)
+			return fmt.Errorf("failed to scale application '%s': %w", app.Name, err)
+		}
+
+		current = append(current, *created)
+	}
+
+	// scale down, the newest instances go first
+	for len(current) > desired {
+		c := current[0]
+		current = current[1:]
+
+		if err := p.removeContainer(ctx, c.id); err != nil {
+			log.Warnf("Failed to remove surplus instance of application '%s': %v", app.Name, err)
+		}
+	}
+
+	delete(p.failedUpdates, app.Name)
+	return nil
+}
+
+// createInstance creates, starts and health gates a single instance of an
+// application. On failure the created container is removed again.
+func (p *Provider) createInstance(ctx context.Context, app *resource.Application, taken map[string]struct{}) (*internalContainer, error) {
+	ic, err := fromApplicationResource(app)
+	if err != nil {
+		return nil, err
+	}
+
+	ic.name = nextInstanceName(app, taken)
+
+	id, err := p.createContainer(ctx, ic)
+	if err != nil {
+		return nil, err
+	}
+	ic.id = id
+
+	if err = p.startContainer(ctx, id); err == nil {
+		err = p.awaitHealthy(ctx, id, app.HealthCheck)
+	}
+
+	if err != nil {
+		if rmErr := p.removeContainer(ctx, id); rmErr != nil {
+			log.Errorf("Failed to remove unhealthy instance of application '%s': %v", app.Name, rmErr)
+		}
+
+		return nil, err
+	}
+
+	ic.state = "running"
+	return ic, nil
 }
 
 // skipRecentlyFailed reports whether the given desired hash recently failed to

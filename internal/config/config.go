@@ -43,10 +43,6 @@ func (c *Config) SetFlags() {
 	// reset all flags before continuing
 	flag.Reset()
 
-	if c.Docker.Enabled {
-		flag.Set(flag.IgnoreInstanceDiff)
-	}
-
 	if c.General.ResetProviderOnStartup {
 		flag.Set(flag.RemoveAllOnStartup)
 	}

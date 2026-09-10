@@ -74,7 +74,9 @@ func inspectWithState(status string, health *container.Health) container.Inspect
 		Image:  "nginx:latest",
 		Labels: map[string]string{},
 	}
-	c.HostConfig = &container.HostConfig{}
+
+	// containers created by the agent live on the managed network by default
+	c.HostConfig = &container.HostConfig{NetworkMode: managedNetworkName}
 	return c
 }
 
